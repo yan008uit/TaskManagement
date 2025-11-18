@@ -1,0 +1,43 @@
+﻿@page "/register"
+@using TaskManagementWeb.Services
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<h3>Register</h3>
+
+<div class="mb-2">
+    <input @bind="Username" placeholder="Username" class="form-control" />
+</div>
+<div class="mb-2">
+    <input @bind="Email" placeholder="Email" class="form-control" />
+</div>
+<div class="mb-2">
+    <input @bind="Password" placeholder="Password" type="password" class="form-control" />
+</div>
+<button class="btn btn-success" @onclick="HandleRegister">Register</button>
+
+@if (!string.IsNullOrEmpty(Error))
+{
+    <div class="text-danger mt-2">@Error</div>
+}
+
+@code {
+    private string Username = "";
+    private string Email = "";
+    private string Password = "";
+    private string? Error;
+
+    private async Task HandleRegister()
+    {
+        Error = null;
+        var success = await AuthService.Register(Username, Email, Password);
+        if (success)
+        {
+            Nav.NavigateTo("/login", true);
+        }
+        else
+        {
+            Error = "Registration failed. Username or email may already exist.";
+        }
+    }
+}

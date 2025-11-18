@@ -1,0 +1,71 @@
+﻿@page "/projects"
+@using TaskManagementWeb.Models
+@using TaskManagementWeb.Services
+@inject AuthService AuthService
+@inject ProjectService ProjectService
+@inject NavigationManager Nav
+
+<h3>My Projects</h3>
+
+@if (!initialized)
+{
+    <p>Loading...</p>
+}
+else if (!AuthService.IsAuthenticated)
+{
+    <p>Redirecting to login...</p>
+}
+else if (IsLoading)
+{
+    <p>Loading projects...</p>
+}
+else if (projectList.Count == 0)
+{
+    <p>No projects found.</p>
+}
+else
+{
+    <ul class="list-group">
+        @foreach (var project in projectList)
+        {
+            <li class="list-group-item">
+                <strong>@project.Name</strong> - @project.Description
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private List<ProjectDto> projectList = new();
+    private bool IsLoading = true;
+    private bool initialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        try
+        {
+            await AuthService.InitializeAsync();
+            initialized = true;
+
+            if (!AuthService.IsAuthenticated)
+            {
+                Nav.NavigateTo("/login", true);
+                return;
+            }
+
+            IsLoading = true;
+            projectList = await ProjectService.GetProjectsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error loading projects: " + ex.Message);
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+}

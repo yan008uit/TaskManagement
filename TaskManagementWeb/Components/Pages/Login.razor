@@ -1,0 +1,50 @@
+﻿@page "/login"
+@using TaskManagementWeb.Services
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<h3>Login</h3>
+
+<div class="mb-2">
+    <input @bind="Username" placeholder="Username" class="form-control" />
+</div>
+<div class="mb-2">
+    <input @bind="Password" placeholder="Password" type="password" class="form-control" />
+</div>
+
+<button class="btn btn-primary" @onclick="HandleLogin" disabled="@IsLoading">
+    @(IsLoading ? "Logging in..." : "Login")
+</button>
+
+@if (!string.IsNullOrEmpty(Error))
+{
+    <div class="text-danger mt-2">@Error</div>
+}
+
+@code {
+    private string Username = "";
+    private string Password = "";
+    private string? Error;
+    private bool IsLoading = false;
+
+    private async Task HandleLogin()
+    {
+        Error = null;
+        IsLoading = true;
+
+        var token = await AuthService.Login(Username, Password);
+
+        if (token != null)
+        {
+            await Task.Delay(100);
+
+            Nav.NavigateTo("/projects", forceLoad: true);
+        }
+        else
+        {
+            Error = "Invalid username or password.";
+        }
+
+        IsLoading = false;
+    }
+}

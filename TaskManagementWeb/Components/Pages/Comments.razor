@@ -1,0 +1,66 @@
+﻿@page "/comments/{TaskId:int}"
+@using TaskManagementWeb.Models
+@using TaskManagementWeb.Services
+@inject CommentService CommentService
+
+<h3>Comments for Task @TaskId</h3>
+
+@if (comments == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="mb-3">
+        <textarea class="form-control" placeholder="Write a comment..." @bind="newComment.Content"></textarea>
+        <button class="btn btn-primary mt-2" @onclick="AddComment">Add Comment</button>
+    </div>
+
+    @if (comments.Count == 0)
+    {
+        <p>No comments yet.</p>
+    }
+    else
+    {
+        <ul class="list-group">
+            @foreach (var c in comments)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>@c.Content</span>
+                    <button class="btn btn-sm btn-danger" @onclick="@(() => DeleteComment(c.Id))">Delete</button>
+                </li>
+            }
+        </ul>
+    }
+}
+
+@code {
+    [Parameter] public int TaskId { get; set; }
+    private List<CommentDto>? comments;
+    private CommentCreateUpdateDto newComment = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        newComment.TaskItemId = TaskId;
+        comments = await CommentService.GetCommentsAsync(TaskId);
+    }
+
+    private async Task AddComment()
+    {
+        var created = await CommentService.CreateCommentAsync(newComment);
+        if (created != null)
+        {
+            comments!.Add(created);
+            newComment.Content = "";
+        }
+    }
+
+    private async Task DeleteComment(int id)
+    {
+        var success = await CommentService.DeleteCommentAsync(id);
+        if (success)
+        {
+            comments = comments!.Where(c => c.Id != id).ToList();
+        }
+    }
+}

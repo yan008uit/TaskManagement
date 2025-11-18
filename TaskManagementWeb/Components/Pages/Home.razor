@@ -1,0 +1,18 @@
+﻿@page "/"
+@using TaskManagementWeb.Services
+@inject AuthService Auth
+@inject NavigationManager Nav
+
+<h3>Welcome</h3>
+
+@if (Auth.IsAuthenticated)
+{
+    <p>You are logged in. Go to your <a href="/projects">Projects</a>.</p>
+}
+else
+{
+    <p>You are not logged in.</p>
+    <button class="btn btn-primary" @onclick="@( () => Nav.NavigateTo("/login") )">
+        Login
+    </button>
+}

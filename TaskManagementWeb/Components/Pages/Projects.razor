@@ -3,6 +3,7 @@
 @using TaskManagementWeb.Services
 @inject AuthService AuthService
 @inject ProjectService ProjectService
+@inject TaskService TaskService
 @inject NavigationManager Nav
 
 <h3>My Projects</h3>
@@ -15,57 +16,94 @@ else if (!AuthService.IsAuthenticated)
 {
     <p>Redirecting to login...</p>
 }
-else if (IsLoading)
+else if (isLoading)
 {
     <p>Loading projects...</p>
 }
-else if (projectList.Count == 0)
+else if (projects.Count == 0)
 {
     <p>No projects found.</p>
 }
 else
 {
-    <ul class="list-group">
-        @foreach (var project in projectList)
+    <div class="row g-4">
+        @foreach (var p in projects)
         {
-            <li class="list-group-item">
-                <strong>@project.Name</strong> - @project.Description
-            </li>
+            <div class="col-md-4">
+                <div class="card p-3">
+                    <h5>@p.Name</h5>
+                    <p class="text-muted">@p.Description</p>
+
+                    <p class="mb-1">
+                        <strong>Total Tasks:</strong> @taskCounts[p.Id].Total
+                    </p>
+                    <p class="mb-1">
+                        To Do: @taskCounts[p.Id].ToDo
+                    </p>
+                    <p class="mb-1">
+                        In Progress: @taskCounts[p.Id].InProgress
+                    </p>
+                    <p>
+                        Done: @taskCounts[p.Id].Done
+                    </p>
+
+                    <button class="btn btn-primary" @onclick="() => OpenProject(p.Id)">
+                        Open Project
+                    </button>
+                </div>
+            </div>
         }
-    </ul>
+    </div>
 }
 
 @code {
-    private List<ProjectDto> projectList = new();
-    private bool IsLoading = true;
     private bool initialized = false;
+    private bool isLoading = true;
+
+    private List<ProjectDto> projects = new();
+    private Dictionary<int, (int Total, int ToDo, int InProgress, int Done)> taskCounts
+        = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
 
+        await AuthService.InitializeAsync();
+        initialized = true;
+
+        if (!AuthService.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
         try
         {
-            await AuthService.InitializeAsync();
-            initialized = true;
+            isLoading = true;
 
-            if (!AuthService.IsAuthenticated)
+            projects = await ProjectService.GetProjectsAsync();
+
+            foreach (var p in projects)
             {
-                Nav.NavigateTo("/login", true);
-                return;
-            }
+                var tasks = await TaskService.GetTasksByProjectAsync(p.Id);
 
-            IsLoading = true;
-            projectList = await ProjectService.GetProjectsAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("Error loading projects: " + ex.Message);
+                taskCounts[p.Id] = (
+                    Total: tasks.Count,
+                    ToDo: tasks.Count(t => t.Status == "ToDo"),
+                    InProgress: tasks.Count(t => t.Status == "InProgress"),
+                    Done: tasks.Count(t => t.Status == "Done")
+                );
+            }
         }
         finally
         {
-            IsLoading = false;
+            isLoading = false;
             StateHasChanged();
         }
+    }
+
+    private void OpenProject(int projectId)
+    {
+        Nav.NavigateTo($"/projects/{projectId}");
     }
 }

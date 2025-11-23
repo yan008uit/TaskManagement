@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components.Authorization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text.Json;
 using TaskManagementWeb.Models;
 
@@ -19,6 +21,29 @@ public class AuthService
     public string? GetToken() => _apiClient.GetToken();
 
     public bool IsAuthenticated => !string.IsNullOrEmpty(_apiClient.GetToken());
+
+    public int UserId
+    {
+        get
+        {
+            var token = _apiClient.GetToken();
+            if (string.IsNullOrEmpty(token)) return 0;
+
+            var handler = new JwtSecurityTokenHandler();
+            JwtSecurityToken? jwt;
+            try
+            {
+                jwt = handler.ReadJwtToken(token);
+            }
+            catch
+            {
+                return 0;
+            }
+
+            var claim = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            return claim != null ? int.Parse(claim.Value) : 0;
+        }
+    }
 
     public async Task InitializeAsync()
     {

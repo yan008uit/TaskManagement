@@ -1,0 +1,117 @@
+﻿@page "/tasks/{TaskId:int}"
+@using TaskManagementWeb.Models
+@using TaskManagementWeb.Services
+@inject TaskService TaskService
+@inject CommentService CommentService
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<h3>@task?.Title</h3>
+<small class="text-muted">@task?.Description</small>
+
+@if (!initialized)
+{
+    <p>Loading task…</p>
+}
+else if (task == null)
+{
+    <p>Task not found.</p>
+}
+else
+{
+    <div class="mt-3">
+        <p><strong>Status:</strong> @task.Status</p>
+
+        <h5>Comments (@comments.Count)</h5>
+        @if (!comments.Any())
+        {
+            <p class="text-muted">No comments yet</p>
+        }
+        else
+        {
+            <ul class="list-group">
+                @foreach (var c in comments)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>@c.Username</strong> <small class="text-muted">@c.CreatedDate.ToString("g")</small>
+                            <p>@c.Text</p>
+                        </div>
+                        @if (c.UserId == AuthService.UserId)
+                        {
+                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteComment(c.Id)">Delete</button>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+
+        <div class="mt-3">
+            <input type="text" class="form-control mb-2" placeholder="Add comment..."
+                   @bind="newCommentText" />
+            <button class="btn btn-primary" @onclick="AddComment">Add Comment</button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int TaskId { get; set; }
+
+    TaskDto? task;
+    List<CommentDto> comments = new();
+    string newCommentText = "";
+    bool initialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await AuthService.InitializeAsync();
+
+        if (!AuthService.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        await LoadTask();
+        initialized = true;
+        StateHasChanged();
+    }
+
+    private async Task LoadTask()
+    {
+        task = await TaskService.GetTaskAsync(TaskId);
+        if (task != null)
+            comments = await CommentService.GetCommentsByTaskAsync(TaskId);
+    }
+
+    private async Task AddComment()
+    {
+        if (string.IsNullOrWhiteSpace(newCommentText)) return;
+
+        var dto = new CommentCreateUpdateDto
+        {
+            TaskItemId = TaskId,
+            Text = newCommentText
+        };
+
+        var comment = await CommentService.AddCommentAsync(dto);
+        if (comment != null)
+        {
+            comments.Add(comment);
+            newCommentText = "";
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteComment(int commentId)
+    {
+        var ok = await CommentService.DeleteCommentAsync(commentId);
+        if (ok)
+        {
+            comments.RemoveAll(c => c.Id == commentId);
+            StateHasChanged();
+        }
+    }
+}

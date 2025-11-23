@@ -1,0 +1,177 @@
+﻿@page "/projects/{ProjectId:int}"
+@using TaskManagementWeb.Models
+@using TaskManagementWeb.Services
+@inject ProjectService ProjectService
+@inject TaskService TaskService
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<h3>@project?.Name</h3>
+<small class="text-muted">@project?.Description</small>
+
+@if (!initialized)
+{
+    <p>Loading project…</p>
+}
+else if (project == null)
+{
+    <p>Project not found.</p>
+}
+else
+{
+    <div class="my-3">
+        <h5>Add New Task</h5>
+        <div class="card p-3 mb-4">
+            <input class="form-control mb-2" placeholder="Task title" @bind="newTaskTitle" />
+            <textarea class="form-control mb-2" placeholder="Task description" @bind="newTaskDescription"></textarea>
+
+            <label for="dueDate" class="form-label">Due Date</label>
+            <input type="date" class="form-control mb-2" id="dueDate"
+                   @bind="newTaskDueDate"
+                   min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+
+            <button class="btn btn-primary" @onclick="AddTask"
+                    disabled="@string.IsNullOrWhiteSpace(newTaskTitle)">
+                Add Task
+            </button>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        @foreach (var group in new[] { ("ToDo", todo), ("InProgress", inProgress), ("Done", done) })
+        {
+            <div class="col-12 col-md-4 mb-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header">
+                        <strong>@group.Item1 (@group.Item2.Count)</strong>
+                    </div>
+                    <div class="card-body">
+                        @if (!group.Item2.Any())
+                        {
+                            <div class="text-muted">No tasks</div>
+                        }
+                        else
+                        {
+                            @foreach (var task in group.Item2)
+                            {
+                                <div class="card mb-2 p-2
+                                @(task.Status == "ToDo" ? "task-todo" :
+                                                       task.Status == "InProgress" ? "task-inprogress" :
+                                                       "task-done")">
+                                    <strong>@task.Title</strong>
+                                    <p class="text-truncate">@task.Description</p>
+                                    <p class="mb-1 text-muted">
+                                        Due: @(task.DueDate.HasValue? task.DueDate.Value.ToString("yyyy-MM-dd") : "No due date")
+                                    </p>
+
+                                    <div class="d-flex gap-2">
+                                        <select class="form-select form-select-sm" @onchange="e => ChangeStatus(task, e.Value?.ToString())" value="@task.Status">
+                                            <option value="ToDo" selected="@("ToDo" == task.Status)">To Do</option>
+                                            <option value="InProgress" selected="@("InProgress" == task.Status)">In Progress</option>
+                                            <option value="Done" selected="@("Done" == task.Status)">Done</option>
+                                        </select>
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenTask(task.Id)">View</button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTask(task)">Delete</button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public int ProjectId { get; set; }
+
+    ProjectDto? project;
+    List<TaskDto> todo = new();
+    List<TaskDto> inProgress = new();
+    List<TaskDto> done = new();
+    bool initialized = false;
+
+    string newTaskTitle = "";
+    string newTaskDescription = "";
+    DateTime newTaskDueDate = DateTime.Today.AddDays(7);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await AuthService.InitializeAsync();
+
+        if (!AuthService.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        await LoadProject();
+        initialized = true;
+        StateHasChanged();
+    }
+
+    private async Task LoadProject()
+    {
+        project = await ProjectService.GetProjectAsync(ProjectId);
+        var tasks = await TaskService.GetTasksByProjectAsync(ProjectId);
+
+        todo = tasks.Where(t => t.Status == "ToDo").ToList();
+        inProgress = tasks.Where(t => t.Status == "InProgress").ToList();
+        done = tasks.Where(t => t.Status == "Done").ToList();
+    }
+
+    private void OpenTask(int taskId)
+    {
+        Nav.NavigateTo($"/tasks/{taskId}");
+    }
+
+    private async Task AddTask()
+    {
+        var dto = new TaskCreateUpdateDto
+        {
+            ProjectId = ProjectId,
+            Title = newTaskTitle,
+            Description = newTaskDescription,
+            Status = "ToDo",
+            DueDate = newTaskDueDate
+        };
+
+        var created = await TaskService.CreateTaskAsync(dto);
+        if (created != null)
+        {
+            todo.Add(created);
+            newTaskTitle = "";
+            newTaskDescription = "";
+            newTaskDueDate = DateTime.Today.AddDays(7);
+            StateHasChanged();
+        }
+    }
+
+    private async Task ChangeStatus(TaskDto task, string? newStatus)
+    {
+        if (string.IsNullOrEmpty(newStatus) || task.Status == newStatus) return;
+
+        task.Status = newStatus;
+        var dto = new TaskCreateUpdateDto
+        {
+            ProjectId = ProjectId,
+            Title = task.Title,
+            Description = task.Description,
+            Status = task.Status,
+            DueDate = task.DueDate ?? DateTime.Today.AddDays(7)
+        };
+        await TaskService.UpdateTaskAsync(task.Id, dto);
+        await LoadProject();
+        StateHasChanged();
+    }
+
+    private async Task DeleteTask(TaskDto task)
+    {
+        await TaskService.DeleteTaskAsync(task.Id);
+        await LoadProject();
+        StateHasChanged();
+    }
+}

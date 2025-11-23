@@ -3,16 +3,22 @@
 @inject AuthService Auth
 @inject NavigationManager Nav
 
-<h3>Welcome</h3>
-
-@if (Auth.IsAuthenticated)
+@if (!Auth.IsAuthenticated)
 {
-    <p>You are logged in. Go to your <a href="/projects">Projects</a>.</p>
+    <div class="text-center py-5">
+        <h1>Welcome to Task Manager</h1>
+        <p class="lead">Please log in to view your dashboard or register to get started.</p>
+        <button class="btn btn-primary me-2" @onclick='() => Nav.NavigateTo("/login")'>Login</button>
+        <button class="btn btn-outline-secondary" @onclick='() => Nav.NavigateTo("/register")'>Register</button>
+    </div>
 }
-else
-{
-    <p>You are not logged in.</p>
-    <button class="btn btn-primary" @onclick="@( () => Nav.NavigateTo("/login") )">
-        Login
-    </button>
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (Auth.IsAuthenticated)
+        {
+            Nav.NavigateTo("/projects", true);
+        }
+    }
 }

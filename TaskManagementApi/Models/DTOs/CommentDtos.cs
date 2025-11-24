@@ -17,7 +17,7 @@ namespace TaskManagementApi.Models.DTOs
         [Required(ErrorMessage = "Text is required to create a comment.")]
         [StringLength(500, ErrorMessage = "Comment cannot exceed 500 characters")]
         public string Text { get; set; } = string.Empty;
-        
+
         [Required(ErrorMessage = "TaskItemId is required to create a comment.")]
         public int TaskItemId { get; set; }
     }

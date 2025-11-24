@@ -6,63 +6,58 @@
 @inject TaskService TaskService
 @inject NavigationManager Nav
 
-<h3>My Projects</h3>
+<h3 class="page-title">Dashboard</h3>
 
 @if (!initialized)
 {
-    <p>Loading...</p>
+    <p class="text-muted">Loading...</p>
 }
 else if (!AuthService.IsAuthenticated)
 {
-    <p>Redirecting to login...</p>
+    <p class="text-warning">Redirecting to login...</p>
 }
 else if (isLoading)
 {
-    <p>Loading projects...</p>
+    <p class="text-muted">Loading projects...</p>
 }
 else if (projects.Count == 0)
 {
-    <p>No projects found.</p>
+    <p class="text-muted">No projects found.</p>
 }
 else
 {
-    <div class="row g-4">
-        @foreach (var p in projects)
-        {
-            <div class="col-md-4">
-                <div class="card p-3">
-                    <h5>@p.Name</h5>
-                    <p class="text-muted">@p.Description</p>
+    <div class="container">
+        <div class="row g-4">
+            @foreach (var p in projects)
+            {
+                <div class="col-md-4">
+                    <div class="card project-card m-2 p-3">
+                        <h5 class="project-name">@p.Name</h5>
+                        <p class="project-desc text-muted">@p.Description</p>
 
-                    <p class="mb-1">
-                        <strong>Total Tasks:</strong> @taskCounts[p.Id].Total
-                    </p>
-                    <p class="mb-1">
-                        To Do: @taskCounts[p.Id].ToDo
-                    </p>
-                    <p class="mb-1">
-                        In Progress: @taskCounts[p.Id].InProgress
-                    </p>
-                    <p>
-                        Done: @taskCounts[p.Id].Done
-                    </p>
+                        <div class="task-summary mb-3">
+                            <span class="badge badge-status badge-total">Total: @taskCounts[p.Id].Total</span>
+                            <span class="badge badge-status badge-todo">To Do: @taskCounts[p.Id].ToDo</span>
+                            <span class="badge badge-status badge-inprogress">In Progress: @taskCounts[p.Id].InProgress</span>
+                            <span class="badge badge-status badge-done">Done: @taskCounts[p.Id].Done</span>
+                        </div>
 
-                    <button class="btn btn-primary" @onclick="() => OpenProject(p.Id)">
-                        Open Project
-                    </button>
+                        <button class="btn btn-primary w-100" @onclick="() => OpenProject(p.Id)">
+                            Open Project
+                        </button>
+                    </div>
                 </div>
-            </div>
-        }
+            }
+        </div>
     </div>
 }
 
 @code {
     private bool initialized = false;
-    private bool isLoading = true;
+    private bool isLoading = false;
 
     private List<ProjectDto> projects = new();
-    private Dictionary<int, (int Total, int ToDo, int InProgress, int Done)> taskCounts
-        = new();
+    private Dictionary<int, (int Total, int ToDo, int InProgress, int Done)> taskCounts = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -77,16 +72,17 @@ else
             return;
         }
 
+        isLoading = true;
+        StateHasChanged();
+
         try
         {
-            isLoading = true;
-
             projects = await ProjectService.GetProjectsAsync();
+            taskCounts.Clear();
 
             foreach (var p in projects)
             {
                 var tasks = await TaskService.GetTasksByProjectAsync(p.Id);
-
                 taskCounts[p.Id] = (
                     Total: tasks.Count,
                     ToDo: tasks.Count(t => t.Status == "ToDo"),

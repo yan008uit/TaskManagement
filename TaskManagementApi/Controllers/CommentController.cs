@@ -36,10 +36,10 @@ namespace TaskManagementApi.Controllers
         {
             int userId = GetUserId();
             var comments = await _commentService.GetCommentsByTaskAsync(taskId, userId);
-            
+
             if (comments == null)
                 return NotFound("Task not found, or you don't have access to this task.");
-            
+
             return Ok(comments);
         }
 
@@ -58,7 +58,7 @@ namespace TaskManagementApi.Controllers
             if (created == null) return BadRequest("Task not found or access denied.");
             return CreatedAtAction(nameof(GetComments), new { taskId = created.TaskItemId }, created);
         }
-        
+
         /// <summary>
         /// Deletes a comment based on ID.
         /// </summary>
@@ -72,9 +72,9 @@ namespace TaskManagementApi.Controllers
         {
             int userId = GetUserId();
             var success = await _commentService.DeleteCommentAsync(id, userId);
-            if (!success) 
+            if (!success)
                 return NotFound("Comment not found or access denied.");
-            
+
             return Ok("Comment deleted.");
         }
     }

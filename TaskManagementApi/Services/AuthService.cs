@@ -24,7 +24,7 @@ namespace TaskManagementApi.Services
             // Checks if username and email already exists
             if (await _context.Users.AnyAsync(u => u.Username == username || u.Email == email))
                 return null;
-            
+
             // Creates a new user
             var user = new User
             {
@@ -36,7 +36,7 @@ namespace TaskManagementApi.Services
             // Saves information in the database
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
-            
+
             return user;
         }
 
@@ -70,16 +70,16 @@ namespace TaskManagementApi.Services
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.UniqueName, user.Username)
             };
-            
+
             // Creates a JWT token
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"], 
-                claims: claims, 
-                expires: DateTime.UtcNow.AddHours(8), 
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(8),
                 signingCredentials: creds
                 );
-            
+
             // Returns token as a JWTT string
             return new JwtSecurityTokenHandler().WriteToken(token);
         }

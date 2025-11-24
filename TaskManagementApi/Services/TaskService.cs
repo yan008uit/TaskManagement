@@ -2,6 +2,7 @@
 using TaskManagementApi.Data;
 using TaskManagementApi.Models;
 using TaskManagementApi.Models.DTOs;
+using TaskStatus = TaskManagementApi.Models.TaskStatus;
 
 namespace TaskManagementApi.Services
 {
@@ -13,201 +14,169 @@ namespace TaskManagementApi.Services
         {
             _context = context;
         }
-        
+
         // Get all tasks for a project
         public async Task<IEnumerable<TaskDto>?> GetTasksByProjectAsync(int projectId, int userId)
         {
-            // Checks if project exists 
-            bool projectExists = await _context.Projects
-                .AnyAsync(p => p.Id == projectId && p.UserId == userId);
-            
-            // Returns null if projects doesnt exist
-            if (!projectExists)
-                return null;
-            
-            // Retrieves task relevant for the given project id
             var tasks = await _context.TaskItems
                 .Include(t => t.Project)
-                .Where(t => t.ProjectId == projectId && t.Project != null && t.Project.UserId == userId)                
+                .Include(t => t.AssignedUser)
+                .Include(t => t.CreatedByUser)
+                .Where(t => t.ProjectId == projectId)
                 .ToListAsync();
 
-            // Returns task as a DTO
             return tasks.Select(t => new TaskDto
             {
                 Id = t.Id,
                 Title = t.Title,
-                Status = t.Status,
+                Description = t.Description,
+                Status = t.Status.ToString(),
                 CreatedDate = t.CreatedDate,
-                DueDate = t.DueDate
+                DueDate = t.DueDate,
+                ProjectId = t.ProjectId,
+                CreatedByUserId = t.CreatedByUserId,
+                CreatedByUsername = t.CreatedByUser?.Username,
+                AssignedUserId = t.AssignedUserId,
+                AssignedUsername = t.AssignedUser?.Username
             });
         }
 
         // Get detailed task info
-        public async Task<TaskDetailsDto?> GetTaskByIdAsync(int id, int userId)
+        public async Task<TaskDetailsDto?> GetTaskByIdAsync(int taskId, int userId)
         {
-            // Uses taskId to retrieve task, but only if user has access rights
             var task = await _context.TaskItems
                 .Include(t => t.Project)
+                .Include(t => t.Comments)
                 .Include(t => t.AssignedUser)
-                .FirstOrDefaultAsync(t => t.Id == id && t.Project != null && t.Project.UserId == userId);
-            
-            // If task does not exist null is returned
-            if (task == null) 
-                return null;
+                .Include(t => t.CreatedByUser)
+                .FirstOrDefaultAsync(t => t.Id == taskId);
 
-            // Returns all details related to a task usind taskDetail DTO
+            if (task == null) return null;
+
             return new TaskDetailsDto
             {
                 Id = task.Id,
                 Title = task.Title,
                 Description = task.Description,
-                Status = task.Status,
+                Status = task.Status.ToString(),
                 CreatedDate = task.CreatedDate,
                 DueDate = task.DueDate,
                 ProjectId = task.ProjectId,
                 ProjectName = task.Project?.Name,
+                CreatedByUserId = task.CreatedByUserId,
+                CreatedByUsername = task.CreatedByUser?.Username,
                 AssignedUserId = task.AssignedUserId,
-                AssignedUserName = task.AssignedUser?.Username,
-                AssignedUserEmail = task.AssignedUser?.Email
+                AssignedUsername = task.AssignedUser?.Username,
+                AssignedUserEmail = task.AssignedUser?.Email,
+                Comments = task.Comments
+                               .Select(c => new CommentDto
+                               {
+                                   Id = c.Id,
+                                   Text = c.Text,
+                                   TaskItemId = c.TaskItemId,
+                                   UserId = c.UserId,
+                                   Username = c.User?.Username,
+                                   CreatedDate = c.CreatedDate
+                               })
+                               .ToList()
             };
         }
 
-        // Creates a new task
+        // Create a new task
         public async Task<TaskDetailsDto?> CreateTaskAsync(TaskCreateDto dto, int userId)
         {
-            // Checks if project exist and user has access
             var project = await _context.Projects
-                .FirstOrDefaultAsync(p => p.Id == dto.ProjectId && p.UserId == userId);
+                .FirstOrDefaultAsync(p => p.Id == dto.ProjectId);
+            if (project == null) return null;
 
-            // Returns null if either condition does not exist
-            if (project == null) 
-                return null;
-
-            // Validates assigned user
-            if (dto.AssignedUserId.HasValue)
-            {
-                var userExists = await _context.Users.AnyAsync(u => u.Id == dto.AssignedUserId.Value);
-                if (!userExists) 
-                    return null;
-            }
-
-            // Creates a new task 
             var task = new TaskItem
             {
                 Title = dto.Title,
                 Description = dto.Description,
                 Status = dto.Status,
-                CreatedDate = DateTime.UtcNow,
                 DueDate = dto.DueDate,
                 ProjectId = dto.ProjectId,
-                AssignedUserId = dto.AssignedUserId
+                CreatedByUserId = userId,
+                CreatedDate = DateTime.UtcNow
             };
 
-            // Saves the task
+            // Assign single user
+            if (dto.AssignedUserId.HasValue)
+            {
+                bool userExists = await _context.Users.AnyAsync(u => u.Id == dto.AssignedUserId.Value);
+                if (userExists)
+                    task.AssignedUserId = dto.AssignedUserId.Value;
+            }
+
             _context.TaskItems.Add(task);
             await _context.SaveChangesAsync();
 
-            // Return the new task as a details DTO
-            return new TaskDetailsDto
-            {
-                Id = task.Id,
-                Title = task.Title,
-                Description = task.Description,
-                Status = task.Status,
-                DueDate = task.DueDate,
-                ProjectId = task.ProjectId,
-                ProjectName = project.Name,
-                AssignedUserId = task.AssignedUserId
-            };
+            return await GetTaskByIdAsync(task.Id, userId);
         }
 
-        // Update a task
-        public async Task<bool> UpdateTaskAsync(int id, TaskUpdateDto dto, int userId)
+        // Update task (only creator can update)
+        public async Task<bool> UpdateTaskAsync(int taskId, TaskUpdateDto dto, int userId)
         {
-            // Checks if task exist and user has access
             var task = await _context.TaskItems
-                .Include(t => t.Project)
-                .FirstOrDefaultAsync(t => t.Id == id && t.Project != null && t.Project.UserId == userId);            
-            
-            // Returns false if user doesnt have access or task doesnt exist
-            if (task == null) 
-                return false;
-            
-            // Updates only the fields where user gives input
-            if (dto.Title != null)
-                task.Title = dto.Title;
-            
-            if (dto.Description != null)
-                task.Description = dto.Description;
-            
-            if (dto.Status.HasValue)
-                task.Status = dto.Status.Value;
-            
-            if (dto.DueDate.HasValue)
-                task.DueDate = dto.DueDate.Value;
+                .FirstOrDefaultAsync(t => t.Id == taskId && t.CreatedByUserId == userId);
 
+            if (task == null) return false;
+
+            if (!string.IsNullOrEmpty(dto.Title)) task.Title = dto.Title;
+            if (!string.IsNullOrEmpty(dto.Description)) task.Description = dto.Description;
+            if (dto.Status.HasValue) task.Status = dto.Status.Value;
+            if (dto.DueDate.HasValue) task.DueDate = dto.DueDate.Value;
+
+            // Update assigned user
             if (dto.AssignedUserId.HasValue)
-                task.AssignedUserId = dto.AssignedUserId;
+            {
+                bool userExists = await _context.Users.AnyAsync(u => u.Id == dto.AssignedUserId.Value);
+                if (userExists)
+                    task.AssignedUserId = dto.AssignedUserId.Value;
+            }
 
-            // Saves changes and returns true
             await _context.SaveChangesAsync();
             return true;
         }
 
-        // Delete
-        public async Task<bool> DeleteTaskAsync(int id, int userId)
+        // Assign a single user (only creator can assign)
+        public async Task<bool> AssignUserAsync(int taskId, int assignedUserId, int userId)
         {
-            // Checks that the task exist and that user has access
             var task = await _context.TaskItems
-                .Include(t => t.Project)
-                .FirstOrDefaultAsync(t => t.Id == id && t.Project != null && t.Project.UserId == userId);
-            
-            // returns false if user doesnt have access or task doesnt exist
-            if (task == null) 
-                return false;
+                .FirstOrDefaultAsync(t => t.Id == taskId && t.CreatedByUserId == userId);
 
-            // Deletes task from database
-            _context.TaskItems.Remove(task);
+            if (task == null) return false;
+
+            bool userExists = await _context.Users.AnyAsync(u => u.Id == assignedUserId);
+            if (!userExists) return false;
+
+            task.AssignedUserId = assignedUserId;
             await _context.SaveChangesAsync();
             return true;
         }
 
-        // Update status
-        public async Task<bool> UpdateStatusAsync(int id, Models.TaskStatus status, int userId)
+        // Update task status (creator only)
+        public async Task<bool> UpdateStatusAsync(int taskId, TaskStatus status, int userId)
         {
-            // Retrieves the task and checks if user has access
             var task = await _context.TaskItems
-                .Include(t => t.Project)
-                .FirstOrDefaultAsync(t => t.Id == id && t.Project != null && t.Project.UserId == userId);
-            
-            if (task == null) 
-                return false;
+                .FirstOrDefaultAsync(t => t.Id == taskId && t.CreatedByUserId == userId);
 
-            // Updates task status
+            if (task == null) return false;
+
             task.Status = status;
             await _context.SaveChangesAsync();
             return true;
         }
 
-        // Assign task to another user
-        public async Task<bool> AssignTaskAsync(int id, int assignedUserId, int userId)
+        // Delete task (creator only)
+        public async Task<bool> DeleteTaskAsync(int taskId, int userId)
         {
-            // Checks that the task exist and that user has access
             var task = await _context.TaskItems
-                .Include(t => t.Project)
-                .FirstOrDefaultAsync(t => t.Id == id && t.Project != null && t.Project.UserId == userId);
-            
-            if (task == null) 
-                return false;
+                .FirstOrDefaultAsync(t => t.Id == taskId);
 
-            // Checks that assigned user exists
-            var assignedUser = await _context.Users.FindAsync(assignedUserId);
-            
-            if (assignedUser == null) 
-                return false;
+            if (task == null || task.CreatedByUserId != userId) return false;
 
-            // Assigns the task to a user
-            task.AssignedUserId = assignedUserId;
+            _context.TaskItems.Remove(task);
             await _context.SaveChangesAsync();
             return true;
         }

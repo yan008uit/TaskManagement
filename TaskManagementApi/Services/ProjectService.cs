@@ -46,9 +46,9 @@ namespace TaskManagementApi.Services
             var project = await _context.Projects
                 .Include(p => p.Tasks)
                 .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
-            
+
             // Returns null if the project does not exist or user doesnt have access
-            if (project == null) 
+            if (project == null)
                 return null;
 
             // Retruns a DTO
@@ -100,9 +100,9 @@ namespace TaskManagementApi.Services
         {
             // Checks if project exists
             var existing = await _context.Projects.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
-            
+
             // Returns null if it does not exist
-            if (existing == null) 
+            if (existing == null)
                 return false;
 
             // Updates only if new values are given by user
@@ -120,15 +120,15 @@ namespace TaskManagementApi.Services
             // Retrieves project
             var project = await _context.Projects
                 .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
-            
+
             // Returns false if project id does not exist
-            if (project == null) 
+            if (project == null)
                 return false;
 
             // Deletes the project from the database
             _context.Projects.Remove(project);
             await _context.SaveChangesAsync();
-            
+
             return true;
         }
     }

@@ -1,9 +1,14 @@
 ﻿namespace TaskManagementWeb.Models
 {
-
     public class LoginResponse
     {
         public string? Token { get; set; }
+    }
+
+    public class UserDto
+    {
+        public int Id { get; set; }
+        public string Username { get; set; } = "";
     }
 
     public class ProjectDto
@@ -26,16 +31,15 @@
         public int Id { get; set; }
         public string Title { get; set; } = "";
         public string? Description { get; set; }
-
         public string Status { get; set; } = "ToDo";
-
         public int ProjectId { get; set; }
+        public int CreatedByUserId { get; set; }
+        public string? CreatedByUsername { get; set; }
         public int? AssignedUserId { get; set; }
+        public string? AssignedUsername { get; set; }
 
         public DateTime CreatedDate { get; set; }
         public DateTime? DueDate { get; set; }
-
-        public List<CommentDto> Comments { get; set; } = new();
     }
 
     public class TaskCreateUpdateDto
@@ -43,9 +47,9 @@
         public int ProjectId { get; set; }
         public string Title { get; set; } = "";
         public string? Description { get; set; }
-
         public string Status { get; set; } = "ToDo";
         public DateTime? DueDate { get; set; }
+        public int? AssignedUserId { get; set; }
     }
 
     public class TaskSummaryDto
@@ -53,7 +57,6 @@
         public int Id { get; set; }
         public string Title { get; set; } = "";
         public string Status { get; set; } = "ToDo";
-
         public DateTime CreatedDate { get; set; }
         public DateTime? DueDate { get; set; }
     }
@@ -74,4 +77,8 @@
         public string Text { get; set; } = "";
     }
 
+    public class TaskAssignUserDto
+    {
+        public int UserId { get; set; }
+    }
 }

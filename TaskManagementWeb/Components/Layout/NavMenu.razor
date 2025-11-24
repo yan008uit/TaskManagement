@@ -3,54 +3,37 @@
 @inject AuthService AuthService
 @inject NavigationManager Nav
 @inject AuthenticationStateProvider AuthProvider
+@inject IJSRuntime JS
 
-<CascadingAuthenticationState>
-    <div class="top-row ps-3 navbar navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="">TaskManagementWeb</a>
-        </div>
-    </div>
+<nav class="nav">
+    <div class="nav-home" @onclick="GoHome" style="cursor:pointer;">TaskManager</div>
 
-    <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+    <ul class="nav-list">
+        @if (isAuthenticated)
+        {
 
-    <div class="nav-scrollable">
-        <nav class="flex-column">
-            @if (isAuthenticated)
-            {
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                        <span class="bi bi-house-door-fill" aria-hidden="true"></span> Home
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <button class="btn btn-link nav-link" @onclick="Logout">
-                        <span class="bi bi-box-arrow-right" aria-hidden="true"></span> Logout
-                    </button>
-                </div>
-            }
-            else
-            {
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="login">
-                        <span class="bi bi-person-fill" aria-hidden="true"></span> Login
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="register">
-                        <span class="bi bi-person-plus-fill" aria-hidden="true"></span> Register
-                    </NavLink>
-                </div>
-            }
-        </nav>
-    </div>
-</CascadingAuthenticationState>
+            <li>
+                <button class="nav-btn nav-btn-light" @onclick="Logout">Logout</button>
+            </li>
+        }
+        else
+        {
+            <li>
+                <NavLink class="nav-btn nav-btn-light" href="login">Login</NavLink>
+            </li>
+
+            <li>
+                <NavLink class="nav-btn nav-btn-outline" href="register">Register</NavLink>
+            </li>
+        }
+    </ul>
+</nav>
 
 @code {
     private bool isAuthenticated;
 
     protected override async Task OnInitializedAsync()
     {
-        // Subscribe to auth state changes
         AuthProvider.AuthenticationStateChanged += AuthStateChanged;
         var authState = await AuthProvider.GetAuthenticationStateAsync();
         isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
@@ -66,11 +49,11 @@
     private async Task Logout()
     {
         await AuthService.Logout();
-        Nav.NavigateTo("/login", true);
+        Nav.NavigateTo("/", true);
     }
 
-    public void Dispose()
+    private void GoHome()
     {
-        AuthProvider.AuthenticationStateChanged -= AuthStateChanged;
+        Nav.NavigateTo("/");
     }
 }

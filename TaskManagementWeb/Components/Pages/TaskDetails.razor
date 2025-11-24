@@ -6,35 +6,48 @@
 @inject AuthService AuthService
 @inject NavigationManager Nav
 
-<h3>@task?.Title</h3>
-<small class="text-muted">@task?.Description</small>
-
 @if (!initialized)
 {
-    <p>Loading task…</p>
+    <p class="text-muted">Loading task…</p>
 }
 else if (task == null)
 {
-    <p>Task not found.</p>
+    <p class="text-danger">Task not found.</p>
 }
 else
 {
-    <div class="mt-3">
-        <p><strong>Status:</strong> @task.Status</p>
+    <h3 class="page-title">@task.Title</h3>
 
-        <h5>Comments (@comments.Count)</h5>
+    @if (!string.IsNullOrWhiteSpace(task.Description))
+    {
+        <p class="project-description text-center text-muted mb-4">
+            @task.Description
+        </p>
+    }
+
+    <div class="card task-details-card">
+        <p>
+            <strong>Status:</strong>
+            <span class="badge @GetStatusClass(task.Status)">
+                @task.Status
+            </span>
+        </p>
+
+        <h5 class="mt-4">Comments (@comments.Count)</h5>
+
         @if (!comments.Any())
         {
             <p class="text-muted">No comments yet</p>
         }
         else
         {
-            <ul class="list-group">
+            <ul class="list-group comments-section mb-3">
                 @foreach (var c in comments)
                 {
                     <li class="list-group-item d-flex justify-content-between align-items-start">
                         <div>
-                            <strong>@c.Username</strong> <small class="text-muted">@c.CreatedDate.ToString("g")</small>
+                            <strong>@c.Username</strong>
+                            <small class="text-muted">@c.CreatedDate.ToString("g")</small>
                             <p>@c.Text</p>
                         </div>
                         @if (c.UserId == AuthService.UserId)
@@ -46,9 +59,8 @@ else
             </ul>
         }
 
-        <div class="mt-3">
-            <input type="text" class="form-control mb-2" placeholder="Add comment..."
-                   @bind="newCommentText" />
+        <div class="add-comment d-flex gap-2">
+            <input type="text" class="form-control" placeholder="Add comment..." @bind="newCommentText" />
             <button class="btn btn-primary" @onclick="AddComment">Add Comment</button>
         </div>
     </div>
@@ -83,7 +95,9 @@ else
     {
         task = await TaskService.GetTaskAsync(TaskId);
         if (task != null)
+        {
             comments = await CommentService.GetCommentsByTaskAsync(TaskId);
+        }
     }
 
     private async Task AddComment()
@@ -114,4 +128,12 @@ else
             StateHasChanged();
         }
     }
+
+    private string GetStatusClass(string status) => status switch
+    {
+        "ToDo" => "badge-todo",
+        "InProgress" => "badge-inprogress",
+        "Done" => "badge-done",
+        _ => "badge-secondary"
+    };
 }

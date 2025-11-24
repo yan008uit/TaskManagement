@@ -1,15 +1,23 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using TaskManagementApi.Models;
 
 namespace TaskManagementApi.Models.DTOs
 {
     public class TaskDto
     {
         public int Id { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public TaskStatus Status { get; set; }
+        public string Title { get; set; } = "";
+        public string? Description { get; set; }
+        public string Status { get; set; } = "ToDo";
+        public int ProjectId { get; set; }
+
+        public int CreatedByUserId { get; set; }
+        public string? CreatedByUsername { get; set; }
+        public int? AssignedUserId { get; set; }
+        public string? AssignedUsername { get; set; }
+
         public DateTime CreatedDate { get; set; }
         public DateTime? DueDate { get; set; }
+        public List<CommentDto> Comments { get; set; } = new();
     }
 
     public class TaskCreateDto
@@ -28,7 +36,6 @@ namespace TaskManagementApi.Models.DTOs
 
         [Required(ErrorMessage = "Project ID is required to create a task.")]
         public int ProjectId { get; set; }
-
         public int? AssignedUserId { get; set; }
     }
 
@@ -48,25 +55,38 @@ namespace TaskManagementApi.Models.DTOs
         public TaskStatus Status { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime? DueDate { get; set; }
+        public int? AssignedUserId { get; set; }
+        public string? AssignedUsername { get; set; }
     }
 
     public class TaskDetailsDto
     {
         public int Id { get; set; }
-        public string Title { get; set; } = string.Empty;
+        public string Title { get; set; } = "";
         public string? Description { get; set; }
-        public TaskStatus Status { get; set; }
+        public string Status { get; set; } = "ToDo";
+
         public DateTime CreatedDate { get; set; }
         public DateTime? DueDate { get; set; }
 
         public int ProjectId { get; set; }
         public string? ProjectName { get; set; }
 
+        public int CreatedByUserId { get; set; }
+        public string? CreatedByUsername { get; set; }
         public int? AssignedUserId { get; set; }
-        public string? AssignedUserName { get; set; }
+        public string? AssignedUsername { get; set; }
         public string? AssignedUserEmail { get; set; }
+
+        public List<CommentDto> Comments { get; set; } = new();
     }
-    
+
+    public class TaskAssignUsersDto
+    {
+        [Required]
+        public int UserId { get; set; }
+    }
+
     public class UpdateStatusDto
     {
         [Required(ErrorMessage = "Status is required.")]

@@ -1,6 +1,4 @@
 ﻿using TaskManagementWeb.Models;
-using TaskManagementWeb.Services;
-using System.Net.Http;
 
 namespace TaskManagementWeb.Services
 {

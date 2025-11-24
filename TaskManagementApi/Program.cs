@@ -39,6 +39,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ProjectService>();
 builder.Services.AddScoped<TaskService>();
 builder.Services.AddScoped<CommentService>();
+builder.Services.AddScoped<UserService>();
 
 // CORS
 builder.Services.AddCors(options =>
@@ -65,17 +66,17 @@ builder.Services.AddSwaggerGen(options =>
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Project Part 1",
-        Version = "v1" ,
+        Version = "v1",
         Description = "Swagger documentation for Task Management API"
     });
-    
+
     var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    
+
     // Includes XML comments
     if (File.Exists(xmlPath))
         options.IncludeXmlComments(xmlPath);
-    
+
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",

@@ -6,73 +6,79 @@ namespace TaskManagementWeb.Services
     {
         private readonly ApiClient _api;
 
-        public ProjectService(ApiClient api)
+        public ProjectService(ApiClient api) => _api = api;
+
+        private void LogError(string action, Exception ex, int? id = null)
         {
-            _api = api;
+            Console.WriteLine($"[ProjectService] Error during '{action}'{(id.HasValue ? $" (ID: {id})" : "")}: {ex.Message}");
         }
 
-        public async Task<List<ProjectDto>> GetProjectsAsync()
+        // Get all projects visible to the user (owns or has tasks)
+        public async Task<List<ProjectDto>> GetVisibleProjectsAsync()
         {
             try
             {
-                var projects = await _api.GetAsync<List<ProjectDto>>("project");
-                return projects ?? new List<ProjectDto>();
+                return await _api.GetAsync<List<ProjectDto>>("project/visible") ?? new();
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"Error fetching projects: {ex.Message}");
-                return new List<ProjectDto>();
+                LogError("GetVisibleProjects", ex);
+                return new();
             }
         }
 
+        // Get a project
         public async Task<ProjectDto?> GetProjectAsync(int id)
         {
             try
             {
                 return await _api.GetAsync<ProjectDto>($"project/{id}");
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"Error fetching project {id}: {ex.Message}");
+                LogError("GetProject", ex, id);
                 return null;
             }
         }
 
+        // Create project
         public async Task<ProjectDto?> CreateProjectAsync(ProjectCreateDto dto)
         {
             try
             {
                 return await _api.PostAsync<ProjectCreateDto, ProjectDto>("project", dto);
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"Error creating project: {ex.Message}");
+                LogError("CreateProject", ex);
                 return null;
             }
         }
 
+        // Update project
         public async Task<bool> UpdateProjectAsync(int id, ProjectCreateDto dto)
         {
             try
             {
                 return await _api.PutAsync($"project/{id}", dto);
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"Error updating project {id}: {ex.Message}");
+                LogError("UpdateProject", ex, id);
                 return false;
             }
         }
 
+        // Delete project
         public async Task<bool> DeleteProjectAsync(int id)
         {
             try
             {
                 return await _api.DeleteAsync($"project/{id}");
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"Error deleting project {id}: {ex.Message}");
+                LogError("DeleteProject", ex, id);
                 return false;
             }
         }

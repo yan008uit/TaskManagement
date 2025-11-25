@@ -30,7 +30,7 @@ namespace TaskManagementApi.Services
                 Id = t.Id,
                 Title = t.Title,
                 Description = t.Description,
-                Status = t.Status.ToString(),
+                Status = t.Status,
                 CreatedDate = t.CreatedDate,
                 DueDate = t.DueDate,
                 ProjectId = t.ProjectId,
@@ -42,48 +42,40 @@ namespace TaskManagementApi.Services
         }
 
         // Get detailed task info
-        public async Task<TaskDetailsDto?> GetTaskByIdAsync(int taskId, int userId)
+        public async Task<TaskDto?> GetTaskByIdAsync(int taskId, int userId)
         {
             var task = await _context.TaskItems
                 .Include(t => t.Project)
-                .Include(t => t.Comments)
                 .Include(t => t.AssignedUser)
                 .Include(t => t.CreatedByUser)
                 .FirstOrDefaultAsync(t => t.Id == taskId);
 
             if (task == null) return null;
 
-            return new TaskDetailsDto
+            if (task.Project.UserId != userId &&
+                task.CreatedByUserId != userId &&
+                task.AssignedUserId != userId)
+                return null;
+
+            return new TaskDto
             {
                 Id = task.Id,
                 Title = task.Title,
                 Description = task.Description,
-                Status = task.Status.ToString(),
-                CreatedDate = task.CreatedDate,
-                DueDate = task.DueDate,
+                Status = task.Status,
                 ProjectId = task.ProjectId,
-                ProjectName = task.Project?.Name,
                 CreatedByUserId = task.CreatedByUserId,
                 CreatedByUsername = task.CreatedByUser?.Username,
                 AssignedUserId = task.AssignedUserId,
                 AssignedUsername = task.AssignedUser?.Username,
-                AssignedUserEmail = task.AssignedUser?.Email,
-                Comments = task.Comments
-                               .Select(c => new CommentDto
-                               {
-                                   Id = c.Id,
-                                   Text = c.Text,
-                                   TaskItemId = c.TaskItemId,
-                                   UserId = c.UserId,
-                                   Username = c.User?.Username,
-                                   CreatedDate = c.CreatedDate
-                               })
-                               .ToList()
+                CreatedDate = task.CreatedDate,
+                DueDate = task.DueDate,
+                ProjectOwnerId = task.Project?.UserId ?? 0
             };
         }
 
         // Create a new task
-        public async Task<TaskDetailsDto?> CreateTaskAsync(TaskCreateDto dto, int userId)
+        public async Task<TaskDto?> CreateTaskAsync(TaskCreateDto dto, int userId)
         {
             var project = await _context.Projects
                 .FirstOrDefaultAsync(p => p.Id == dto.ProjectId);
@@ -100,7 +92,6 @@ namespace TaskManagementApi.Services
                 CreatedDate = DateTime.UtcNow
             };
 
-            // Assign single user
             if (dto.AssignedUserId.HasValue)
             {
                 bool userExists = await _context.Users.AnyAsync(u => u.Id == dto.AssignedUserId.Value);
@@ -127,7 +118,6 @@ namespace TaskManagementApi.Services
             if (dto.Status.HasValue) task.Status = dto.Status.Value;
             if (dto.DueDate.HasValue) task.DueDate = dto.DueDate.Value;
 
-            // Update assigned user
             if (dto.AssignedUserId.HasValue)
             {
                 bool userExists = await _context.Users.AnyAsync(u => u.Id == dto.AssignedUserId.Value);

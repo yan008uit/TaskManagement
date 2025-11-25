@@ -197,6 +197,14 @@ button,
     text-align: center;
 }
 
+.section-title {
+    margin-bottom: 20px;
+    margin-top: 30px;
+    font-weight: 300;
+    color: #FCF9EA;
+    text-align: center;
+}
+
 /* Container */
 .container {
     max-width: 90%;
@@ -251,19 +259,19 @@ button,
 }
 
 .badge-total {
-    background-color: #BADFDB;
+    background-color: #DDC57A;
 }
 
 .badge-todo {
-    background-color: #FFA4A4;
+    background-color: #BF1A1A;
 }
 
 .badge-inprogress {
-    background-color: #BADFDB;
+    background-color: #1581BF;
 }
 
 .badge-done {
-    background-color: #FFBDBD;
+    background-color: #628141;
 }
 
 /* General Card Styles */
@@ -295,18 +303,18 @@ button,
 
 /* Task Status Cards */
 .task-todo {
-    border-left: 4px solid #FFA4A4;
-    background-color: rgba(255,164,164,0.15);
+    border-left: 4px solid #BF1A1A;
+    background-color: rgba(255, 76, 76, 0.15);
 }
 
 .task-inprogress {
-    border-left: 4px solid #BADFDB;
-    background-color: rgba(186,223,219,0.15);
+    border-left: 4px solid #1581BF;
+    background-color: rgba(76, 142, 255, 0.15);
 }
 
 .task-done {
-    border-left: 4px solid #FFBDBD;
-    background-color: rgba(255,189,189,0.15);
+    border-left: 4px solid #628141;
+    background-color: rgba(76, 255, 76, 0.15);
 }
 
 /* Task Details */

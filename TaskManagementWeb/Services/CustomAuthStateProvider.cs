@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components.Authorization;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace TaskManagementWeb.Services;
@@ -12,26 +13,30 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
         _apiClient = apiClient;
     }
 
-    public override async Task<AuthenticationState> GetAuthenticationStateAsync()
+    public override Task<AuthenticationState> GetAuthenticationStateAsync()
     {
         string? token = _apiClient.GetToken();
 
-        ClaimsIdentity identity;
+        if (string.IsNullOrEmpty(token))
+            return Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity())));
 
-        if (!string.IsNullOrEmpty(token))
+        try
         {
-            identity = new ClaimsIdentity(new[]
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(token);
+
+            if (jwt.ValidTo < DateTime.UtcNow)
             {
-                new Claim(ClaimTypes.Name, "User")
-            }, "jwt");
-        }
-        else
-        {
-            identity = new ClaimsIdentity();
-        }
+                return Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity())));
+            }
 
-        var user = new ClaimsPrincipal(identity);
-        return await Task.FromResult(new AuthenticationState(user));
+            var identity = new ClaimsIdentity(jwt.Claims, "jwt");
+            return Task.FromResult(new AuthenticationState(new ClaimsPrincipal(identity)));
+        }
+        catch
+        {
+            return Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity())));
+        }
     }
 
     public void NotifyAuthenticationStateChanged()

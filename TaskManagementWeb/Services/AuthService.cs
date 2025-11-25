@@ -15,10 +15,8 @@ public class AuthService
     {
         _apiClient = apiClient;
         _authProvider = authProvider as CustomAuthStateProvider
-                        ?? throw new ArgumentException("AuthenticationStateProvider must be CustomAuthStateProvider");
+            ?? throw new ArgumentException("AuthenticationStateProvider must be CustomAuthStateProvider");
     }
-
-    public string? GetToken() => _apiClient.GetToken();
 
     public bool IsAuthenticated => !string.IsNullOrEmpty(_apiClient.GetToken());
 
@@ -26,22 +24,21 @@ public class AuthService
     {
         get
         {
-            var token = _apiClient.GetToken();
-            if (string.IsNullOrEmpty(token)) return 0;
-
-            var handler = new JwtSecurityTokenHandler();
-            JwtSecurityToken? jwt;
             try
             {
-                jwt = handler.ReadJwtToken(token);
+                var token = _apiClient.GetToken();
+                if (string.IsNullOrEmpty(token)) return 0;
+
+                var handler = new JwtSecurityTokenHandler();
+                var jwt = handler.ReadJwtToken(token);
+
+                var claim = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+                return claim != null ? int.Parse(claim.Value) : 0;
             }
             catch
             {
                 return 0;
             }
-
-            var claim = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
-            return claim != null ? int.Parse(claim.Value) : 0;
         }
     }
 
@@ -57,7 +54,7 @@ public class AuthService
         {
             var dto = new { Username = username, Email = email, Password = password };
             var response = await _apiClient.PostAsync<object, JsonElement>("Auth/register", dto);
-            return response.ValueKind != JsonValueKind.Undefined;
+            return true;
         }
         catch
         {

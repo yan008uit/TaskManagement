@@ -37,7 +37,10 @@ else
 
         @if (!comments.Any())
         {
-            <p class="text-muted">No comments yet</p>
+            <div class="text-center text-muted my-3">
+                <i class="bi bi-chat-dots" style="font-size:1.5rem;"></i>
+                <p class="mb-0">No comments yet</p>
+            </div>
         }
         else
         {
@@ -69,15 +72,13 @@ else
 @code {
     [Parameter] public int TaskId { get; set; }
 
-    TaskDto? task;
-    List<CommentDto> comments = new();
-    string newCommentText = "";
-    bool initialized = false;
+    private TaskDto? task;
+    private List<CommentDto> comments = new();
+    private string newCommentText = "";
+    private bool initialized = false;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (!firstRender) return;
-
         await AuthService.InitializeAsync();
 
         if (!AuthService.IsAuthenticated)
@@ -86,46 +87,66 @@ else
             return;
         }
 
-        await LoadTask();
+        await LoadTaskAsync();
         initialized = true;
-        StateHasChanged();
     }
 
-    private async Task LoadTask()
+    private async Task LoadTaskAsync()
     {
-        task = await TaskService.GetTaskAsync(TaskId);
-        if (task != null)
+        try
         {
-            comments = await CommentService.GetCommentsByTaskAsync(TaskId);
+            task = await TaskService.GetTaskAsync(TaskId);
+            if (task != null)
+            {
+                comments = await CommentService.GetCommentsByTaskAsync(TaskId);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading task: {ex.Message}");
+            task = null;
         }
     }
 
     private async Task AddComment()
     {
-        if (string.IsNullOrWhiteSpace(newCommentText)) return;
+        var text = newCommentText?.Trim();
+        if (string.IsNullOrEmpty(text)) return;
 
         var dto = new CommentCreateUpdateDto
         {
             TaskItemId = TaskId,
-            Text = newCommentText
+            Text = text
         };
 
-        var comment = await CommentService.AddCommentAsync(dto);
-        if (comment != null)
+        try
         {
-            comments.Add(comment);
-            newCommentText = "";
-            StateHasChanged();
+            var comment = await CommentService.AddCommentAsync(dto);
+            if (comment != null)
+            {
+                comments.Add(comment);
+                newCommentText = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to add comment: {ex.Message}");
         }
     }
 
     private async Task DeleteComment(int commentId)
     {
-        var ok = await CommentService.DeleteCommentAsync(commentId);
-        if (ok)
+        try
         {
-            comments.RemoveAll(c => c.Id == commentId);
-            StateHasChanged();
+            var ok = await CommentService.DeleteCommentAsync(commentId);
+            if (ok)
+            {
+                comments.RemoveAll(c => c.Id == commentId);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to delete comment: {ex.Message}");
         }
     }
 

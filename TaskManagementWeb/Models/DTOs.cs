@@ -15,8 +15,9 @@
     {
         public int Id { get; set; }
         public string Name { get; set; } = "";
-        public string? Description { get; set; }
+        public string Description { get; set; } = "";
         public DateTime CreatedDate { get; set; }
+        public int UserId { get; set; }
         public List<TaskSummaryDto> Tasks { get; set; } = new();
     }
 
@@ -24,6 +25,7 @@
     {
         public string Name { get; set; } = "";
         public string? Description { get; set; }
+        public int UserId { get; set; }
     }
 
     public class TaskDto
@@ -37,6 +39,7 @@
         public string? CreatedByUsername { get; set; }
         public int? AssignedUserId { get; set; }
         public string? AssignedUsername { get; set; }
+        public int ProjectOwnerId { get; set; }
 
         public DateTime CreatedDate { get; set; }
         public DateTime? DueDate { get; set; }
@@ -59,6 +62,8 @@
         public string Status { get; set; } = "ToDo";
         public DateTime CreatedDate { get; set; }
         public DateTime? DueDate { get; set; }
+        public int? AssignedUserId { get; set; }
+        public int CreatedByUserId { get; set; }
     }
 
     public class CommentDto

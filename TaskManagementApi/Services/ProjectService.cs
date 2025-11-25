@@ -45,26 +45,28 @@ namespace TaskManagementApi.Services
         {
             var project = await _context.Projects
                 .Include(p => p.Tasks)
-                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+                .FirstOrDefaultAsync(p => p.Id == id &&
+                    (p.UserId == userId || p.Tasks.Any(t => t.AssignedUserId == userId)));
 
-            // Returns null if the project does not exist or user doesnt have access
             if (project == null)
                 return null;
 
-            // Retruns a DTO
             return new ProjectDto
             {
                 Id = project.Id,
                 Name = project.Name,
                 Description = project.Description,
                 CreatedDate = project.CreatedDate,
+                UserId = project.UserId,
                 Tasks = project.Tasks.Select(t => new TaskSummaryDto
                 {
                     Id = t.Id,
                     Title = t.Title,
                     Status = t.Status,
                     CreatedDate = t.CreatedDate,
-                    DueDate = t.DueDate
+                    DueDate = t.DueDate,
+                    AssignedUserId = t.AssignedUserId,
+                    CreatedByUserId = t.CreatedByUserId
                 }).ToList()
             };
         }
@@ -130,6 +132,40 @@ namespace TaskManagementApi.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        /// <summary>
+        /// Get all projects visible to the user:
+        /// - User owns the project
+        /// - User has tasks assigned
+        /// - User has created tasks
+        /// </summary>
+        public async Task<List<ProjectDto>> GetVisibleProjectsAsync(int userId)
+        {
+            var projects = await _context.Projects
+                .Include(p => p.Tasks)
+                .ThenInclude(t => t.AssignedUser)
+                .Include(p => p.Tasks)
+                .ThenInclude(t => t.CreatedByUser)
+                .Where(p => p.UserId == userId || p.Tasks.Any(t => t.AssignedUserId == userId || t.CreatedByUserId == userId))
+                .ToListAsync();
+
+            return projects.Select(p => new ProjectDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                UserId = p.UserId,
+                Tasks = p.Tasks.Select(t => new TaskSummaryDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Status = t.Status,
+                    CreatedByUserId = t.CreatedByUserId,
+                    AssignedUserId = t.AssignedUserId,
+                    DueDate = t.DueDate
+                }).ToList()
+            }).ToList();
         }
     }
 }

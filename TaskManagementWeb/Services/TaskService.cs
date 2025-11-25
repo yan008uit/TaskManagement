@@ -8,38 +8,109 @@ namespace TaskManagementWeb.Services
 
         public TaskService(ApiClient api) => _api = api;
 
-        // Get all tasks for a project
-        public async Task<List<TaskDto>> GetTasksByProjectAsync(int projectId)
-            => await _api.GetAsync<List<TaskDto>>($"task/project/{projectId}") ?? new();
-
-        // Get single task
-        public async Task<TaskDto?> GetTaskAsync(int id)
-            => await _api.GetAsync<TaskDto>($"task/{id}");
-
-        // Create a task
-        public async Task<TaskDto?> CreateTaskAsync(TaskCreateUpdateDto dto)
-            => await _api.PostAsync<TaskCreateUpdateDto, TaskDto>("task", dto);
-
-        // Update a task
-        public async Task<bool> UpdateTaskAsync(int id, TaskCreateUpdateDto dto)
-            => await _api.PutAsync($"task/{id}", dto);
-
-        // Delete a task
-        public async Task<bool> DeleteTaskAsync(int id)
-            => await _api.DeleteAsync($"task/{id}");
-
-        // Assign single user to a task
-        public async Task<bool> AssignUserAsync(int taskId, int userId)
+        private void LogError(string action, Exception ex, int? id = null)
         {
-            var dto = new TaskAssignUserDto { UserId = userId };
-            return await _api.PatchAsync($"task/{taskId}/assign", dto);
+            Console.WriteLine($"[TaskService] Error during '{action}'{(id.HasValue ? $" (ID: {id})" : "")}: {ex.Message}");
         }
 
-        // Update task status
+        // Get all tasks for a project
+        public async Task<List<TaskDto>> GetTasksByProjectAsync(int projectId)
+        {
+            try
+            {
+                return await _api.GetAsync<List<TaskDto>>($"task/project/{projectId}") ?? new();
+            }
+            catch (Exception ex)
+            {
+                LogError("GetTasksByProject", ex, projectId);
+                return new();
+            }
+        }
+
+        // Get a task
+        public async Task<TaskDto?> GetTaskAsync(int id)
+        {
+            try
+            {
+                return await _api.GetAsync<TaskDto>($"task/{id}");
+            }
+            catch (Exception ex)
+            {
+                LogError("GetTask", ex, id);
+                return null;
+            }
+        }
+
+        // Create task
+        public async Task<TaskDto?> CreateTaskAsync(TaskCreateUpdateDto dto)
+        {
+            try
+            {
+                return await _api.PostAsync<TaskCreateUpdateDto, TaskDto>("task", dto);
+            }
+            catch (Exception ex)
+            {
+                LogError("CreateTask", ex);
+                return null;
+            }
+        }
+
+        // Update task
+        public async Task<bool> UpdateTaskAsync(int id, TaskCreateUpdateDto dto)
+        {
+            try
+            {
+                return await _api.PutAsync($"task/{id}", dto);
+            }
+            catch (Exception ex)
+            {
+                LogError("UpdateTask", ex, id);
+                return false;
+            }
+        }
+
+        // Delete task
+        public async Task<bool> DeleteTaskAsync(int id)
+        {
+            try
+            {
+                return await _api.DeleteAsync($"task/{id}");
+            }
+            catch (Exception ex)
+            {
+                LogError("DeleteTask", ex, id);
+                return false;
+            }
+        }
+
+        // Assign single user
+        public async Task<bool> AssignUserAsync(int taskId, int userId)
+        {
+            try
+            {
+                var dto = new TaskAssignUserDto { UserId = userId };
+                return await _api.PatchAsync($"task/{taskId}/assign", dto);
+            }
+            catch (Exception ex)
+            {
+                LogError("AssignUser", ex, taskId);
+                return false;
+            }
+        }
+
+        //  Update status
         public async Task<bool> UpdateStatusAsync(int taskId, string status)
         {
-            var dto = new { Status = status };
-            return await _api.PatchAsync($"task/{taskId}/status", dto);
+            try
+            {
+                var dto = new { Status = status };
+                return await _api.PatchAsync($"task/{taskId}/status", dto);
+            }
+            catch (Exception ex)
+            {
+                LogError("UpdateStatus", ex, taskId);
+                return false;
+            }
         }
     }
 }

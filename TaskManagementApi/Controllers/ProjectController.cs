@@ -35,6 +35,18 @@ namespace TaskManagementApi.Controllers
         }
 
         /// <summary>
+        /// Retrieves all projects visible to the user (owned or assigned tasks).
+        /// </summary>
+        [HttpGet("visible")]
+        public async Task<IActionResult> GetVisibleProjects()
+        {
+            int userId = GetUserId();
+            var projects = await _projectService.GetVisibleProjectsAsync(userId);
+            return Ok(projects);
+        }
+
+
+        /// <summary>
         /// Retrieves a project and its task by using the project ID.
         /// </summary>
         /// <remarks>Authorization required.</remarks>

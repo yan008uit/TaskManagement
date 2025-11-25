@@ -38,15 +38,13 @@
 
         var token = await AuthService.Login(Username, Password);
 
-        if (token != null)
-        {
-            await Task.Delay(100);
-            Nav.NavigateTo("/projects", forceLoad: true);
-        }
-        else
+        if (string.IsNullOrEmpty(token))
         {
             Error = "Invalid username or password.";
+            return;
         }
+
+        Nav.NavigateTo("/projects");
 
     }
 }

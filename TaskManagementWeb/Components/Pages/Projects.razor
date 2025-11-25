@@ -10,28 +10,59 @@
 
 @if (!initialized)
 {
-    <p class="text-muted">Loading...</p>
+    <p class="text-muted text-center">Loading...</p>
 }
 else if (!AuthService.IsAuthenticated)
 {
-    <p class="text-warning">Redirecting to login...</p>
+    <p class="text-warning text-center">Redirecting to login...</p>
 }
 else if (isLoading)
 {
-    <p class="text-muted">Loading projects...</p>
-}
-else if (projects.Count == 0)
-{
-    <p class="text-muted">No projects found.</p>
+    <p class="text-muted text-center">Loading projects...</p>
 }
 else
 {
-    <div class="container">
+    <!-- My Tasks -->
+    <section class="my-tasks-section mb-5">
+        <h4 class="page-title">My tasks</h4>
+
+        @if (myTasks.Count == 0)
+        {
+            <p class="text-muted text-center">You have no tasks assigned.</p>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var task in myTasks)
+                {
+                    <div class="col-sm-6 col-md-4 col-lg-3">
+                        <div class="card task-details-card p-3 h-100">
+                            <strong class="task-title">@task.Title</strong>
+                            <p class="text-truncate task-desc">@task.Description</p>
+                            <p class="text-muted mb-1">
+                                Status: @FormatStatus(task.Status)
+                            </p>
+                            <p class="text-muted mb-1">
+                                Project: <span class="project-name">@projects.FirstOrDefault(p => p.Id == task.ProjectId)?.Name</span>
+                            </p>
+                            <p class="text-muted mb-0">
+                                Due: @(task.DueDate?.ToString("yyyy-MM-dd") ?? "No due date")
+                            </p>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <!-- Projects -->
+    <section class="projects-section">
+        <h4 class="page-title">Projects </h4>
         <div class="row g-4">
             @foreach (var p in projects)
             {
-                <div class="col-md-4">
-                    <div class="card project-card m-2 p-3">
+                <div class="col-sm-6 col-md-4 col-lg-3">
+                    <div class="card project-card m-lg-5 p-3 h-100" style="cursor:pointer;" @onclick="() => OpenProject(p.Id)">
                         <h5 class="project-name">@p.Name</h5>
                         <p class="project-desc text-muted">@p.Description</p>
 
@@ -42,14 +73,19 @@ else
                             <span class="badge badge-status badge-done">Done: @taskCounts[p.Id].Done</span>
                         </div>
 
-                        <button class="btn btn-primary w-100" @onclick="() => OpenProject(p.Id)">
-                            Open Project
-                        </button>
+                        @if (p.UserId == AuthService.UserId)
+                        {
+                            <button class="btn btn-sm btn-outline-danger mt-auto"
+                                    @onclick="() => DeleteProject(p.Id)"
+                                    @onclick:stopPropagation>
+                                Delete
+                            </button>
+                        }
                     </div>
                 </div>
             }
         </div>
-    </div>
+    </section>
 }
 
 @code {
@@ -58,13 +94,13 @@ else
 
     private List<ProjectDto> projects = new();
     private Dictionary<int, (int Total, int ToDo, int InProgress, int Done)> taskCounts = new();
+    private List<TaskDto> myTasks = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
 
         await AuthService.InitializeAsync();
-        initialized = true;
 
         if (!AuthService.IsAuthenticated)
         {
@@ -73,33 +109,61 @@ else
         }
 
         isLoading = true;
-        StateHasChanged();
-
         try
         {
-            projects = await ProjectService.GetProjectsAsync();
+            projects = await ProjectService.GetVisibleProjectsAsync();
             taskCounts.Clear();
+            myTasks.Clear();
 
             foreach (var p in projects)
             {
-                var tasks = await TaskService.GetTasksByProjectAsync(p.Id);
+                var tasks = p.Tasks;
+
                 taskCounts[p.Id] = (
                     Total: tasks.Count,
                     ToDo: tasks.Count(t => t.Status == "ToDo"),
                     InProgress: tasks.Count(t => t.Status == "InProgress"),
                     Done: tasks.Count(t => t.Status == "Done")
                 );
+
+                myTasks.AddRange(tasks.Where(t => t.AssignedUserId == AuthService.UserId)
+                      .Select(t => new TaskDto
+                      {
+                          Id = t.Id,
+                          Title = t.Title,
+                          Status = t.Status,
+                          CreatedByUserId = t.CreatedByUserId,
+                          AssignedUserId = t.AssignedUserId,
+                          DueDate = t.DueDate,
+                          ProjectId = p.Id
+                      }));
             }
         }
         finally
         {
             isLoading = false;
+            initialized = true;
             StateHasChanged();
         }
     }
 
-    private void OpenProject(int projectId)
+    private void OpenProject(int projectId) => Nav.NavigateTo($"/projects/{projectId}");
+
+    private async Task DeleteProject(int projectId)
     {
-        Nav.NavigateTo($"/projects/{projectId}");
+        var success = await ProjectService.DeleteProjectAsync(projectId);
+        if (success)
+        {
+            projects.RemoveAll(p => p.Id == projectId);
+            StateHasChanged();
+        }
     }
+
+    private string FormatStatus(string status) => status switch
+    {
+        "ToDo" => "To do",
+        "InProgress" => "In progress",
+        "Done" => "Done",
+        _ => status
+    };
 }

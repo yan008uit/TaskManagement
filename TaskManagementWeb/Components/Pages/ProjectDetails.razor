@@ -53,7 +53,7 @@ else
         </div>
     </div>
 
-    <!-- Tasks -->
+    <!-- Tasks grouped by status -->
     <div class="row m-3 g-3">
         @foreach (var group in new[] { ("To Do", todo), ("In Progress", inProgress), ("Done", done) })
         {
@@ -71,96 +71,35 @@ else
                         {
                             @foreach (var task in group.Item2)
                             {
-                                <div class="card mb-3 p-3 @(task.Status == "ToDo" ? "task-todo" :
-                                                                                                task.Status == "InProgress" ? "task-inprogress" : "task-done")">
-
-                    <strong class="project-name">@task.Title</strong>
-                    <p class="project-desc text-truncate">@task.Description</p>
-                    <p class="mb-2 text-muted">
-                        Due: @(task.DueDate.HasValue? task.DueDate.Value.ToString("yyyy-MM-dd") : "No due date")
-                    </p>
-
-                                    <!-- Assigned User -->
-                                    <p><strong>Assigned User:</strong></p>
-                                    <div class="mb-2 d-flex align-items-center gap-2">
-                        @if (task.CreatedByUserId == AuthService.UserId)
-                                        {
-                                            <select class="form-select form-select-sm w-auto"
-                                                    @onchange="e => {
-                                                    if (int.TryParse(e.Value?.ToString(), out var userId))
-                                                    {
-                                                        AssignUser(task, userId);
-                                                    }
-                                                }">
-                                              <option value="">Assign User…</option>
-                                            @foreach (var u in users)
-                                            {
-                                                <option value="@u.Id" selected="@(task.AssignedUserId == u.Id)">
-                                                    @u.Username
-                                                </option>
-                                            }
-                                        </select>
-                                    }
-                                                else if (task.AssignedUserId.HasValue)
-                                    {
-                                        var assigned = users.FirstOrDefault(u => u.Id == task.AssignedUserId.Value);
-                                        <span class="badge bg-primary">@assigned?.Username</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">None</span>
-                                    }
-                                </div>
-
-                                <!-- Status & Actions -->
-                                <div class="d-flex gap-2 flex-wrap mt-2 align-items-center">
-                                    @if (task.AssignedUserId == AuthService.UserId)
-                                    {
-                                        <select class="form-select form-select-sm w-auto"
-                                                @onchange="e => ChangeStatus(task, e.Value?.ToString())"
-                                                value="@task.Status">
-                                            <option value="ToDo">To Do</option>
-                                            <option value="InProgress">In Progress</option>
-                                            <option value="Done">Done</option>
-                                        </select>
-                                    }
-                                    else
-                                    {
-                                        <select class="form-select form-select-sm w-auto" disabled>
-                                            <option>@task.Status</option>
-                                        </select>
-                                    }
-
-                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenTask(task.Id)">View</button>
-
-                                    @if (task.CreatedByUserId == AuthService.UserId)
-                                    {
-                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTask(task)">Delete</button>
-                                    }
-                                </div>
-                            </div>
+                                <TaskCard Task="task"
+                                          Users="users"
+                                          AuthService="AuthService"
+                                          OnStatusChanged="UpdateTaskStatus"
+                                          OnUserAssigned="AssignTaskUser"
+                                          OnDeleteTask="DeleteTask"
+                                          OnViewTask="OpenTask" />
+                            }
                         }
-                    }
+                    </div>
                 </div>
             </div>
-        </div>
-    }
-</div>
+        }
+    </div>
 }
 
 @code {
     [Parameter] public int ProjectId { get; set; }
 
-    ProjectDto? project;
-    List<TaskDto> todo = new();
-    List<TaskDto> inProgress = new();
-    List<TaskDto> done = new();
-    bool initialized = false;
+    private ProjectDto? project;
+    private List<TaskDto> todo = new();
+    private List<TaskDto> inProgress = new();
+    private List<TaskDto> done = new();
+    private bool initialized = false;
 
-    string newTaskTitle = "";
-    string newTaskDescription = "";
-    DateTime newTaskDueDate = DateTime.Today.AddDays(7);
-    int? newTaskAssignedUserId = null;
+    private string newTaskTitle = "";
+    private string newTaskDescription = "";
+    private DateTime newTaskDueDate = DateTime.Today.AddDays(7);
+    private int? newTaskAssignedUserId = null;
 
     private List<UserDto> users = new();
 
@@ -201,12 +140,12 @@ else
 
         var tasks = await TaskService.GetTasksByProjectAsync(ProjectId);
 
-        todo = tasks.Where(t => t.Status == "ToDo").ToList();
-        inProgress = tasks.Where(t => t.Status == "InProgress").ToList();
-        done = tasks.Where(t => t.Status == "Done").ToList();
+        todo = tasks.Where(t => string.Equals(t.Status, "ToDo", StringComparison.OrdinalIgnoreCase)).ToList();
+        inProgress = tasks.Where(t => string.Equals(t.Status, "InProgress", StringComparison.OrdinalIgnoreCase)).ToList();
+        done = tasks.Where(t => string.Equals(t.Status, "Done", StringComparison.OrdinalIgnoreCase)).ToList();
     }
 
-    private void OpenTask(int taskId) => Nav.NavigateTo($"/tasks/{taskId}");
+    private void OpenTask(TaskDto task) => Nav.NavigateTo($"/tasks/{task.Id}");
 
     private async Task AddTask()
     {
@@ -232,46 +171,65 @@ else
         }
     }
 
-    private async Task ChangeStatus(TaskDto task, string? newStatus)
+    private async Task UpdateTaskStatus((TaskDto Task, string? NewStatus) args)
     {
+        var (task, newStatus) = args;
         if (string.IsNullOrEmpty(newStatus) || task.Status == newStatus) return;
-
-        // Only assigned user can change status
         if (task.AssignedUserId != AuthService.UserId) return;
 
-        task.Status = newStatus;
         var dto = new TaskCreateUpdateDto
         {
             ProjectId = ProjectId,
             Title = task.Title,
             Description = task.Description,
-            Status = task.Status,
+            Status = newStatus,
             DueDate = task.DueDate,
             AssignedUserId = task.AssignedUserId
         };
-
         await TaskService.UpdateTaskAsync(task.Id, dto);
-        await LoadProject();
+
+        RemoveTaskFromCurrentList(task);
+        task.Status = newStatus;
+        AddTaskToList(task);
+
+        StateHasChanged();
+    }
+
+    private async Task AssignTaskUser((TaskDto Task, int UserId) args)
+    {
+        var (task, userId) = args;
+        if (task.CreatedByUserId != AuthService.UserId) return;
+
+        await TaskService.AssignUserAsync(task.Id, userId);
+
+        task.AssignedUserId = userId;
         StateHasChanged();
     }
 
     private async Task DeleteTask(TaskDto task)
     {
-        // Only creator can delete task
         if (task.CreatedByUserId != AuthService.UserId) return;
 
         await TaskService.DeleteTaskAsync(task.Id);
-        await LoadProject();
+
+        RemoveTaskFromCurrentList(task);
         StateHasChanged();
     }
 
-    private async Task AssignUser(TaskDto task, int userId)
+    private void RemoveTaskFromCurrentList(TaskDto task)
     {
-        // Only creator can assign user
-        if (task.CreatedByUserId != AuthService.UserId) return;
+        todo.Remove(task);
+        inProgress.Remove(task);
+        done.Remove(task);
+    }
 
-        await TaskService.AssignUserAsync(task.Id, userId);
-        await LoadProject();
-        StateHasChanged();
+    private void AddTaskToList(TaskDto task)
+    {
+        switch (task.Status)
+        {
+            case "ToDo": todo.Add(task); break;
+            case "InProgress": inProgress.Add(task); break;
+            case "Done": done.Add(task); break;
+        }
     }
 }

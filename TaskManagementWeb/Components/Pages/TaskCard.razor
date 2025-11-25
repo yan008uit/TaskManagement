@@ -1,0 +1,95 @@
+@using TaskManagementWeb.Models
+@using TaskManagementWeb.Services
+
+<div class="card mb-3 p-3 @(Task.Status == "ToDo" ? "task-todo" :
+                                       Task.Status == "InProgress" ? "task-inprogress" : "task-done")">
+
+    <!-- Task Title & Description -->
+    <strong class="project-name">@Task.Title</strong>
+    <p class="project-desc text-truncate">@Task.Description</p>
+    <p class="mb-2 text-muted">
+        Due: @(Task.DueDate?.ToString("yyyy-MM-dd") ?? "No due date")
+    </p>
+
+    <!-- Assigned User -->
+    <p><strong>Assigned User:</strong></p>
+    <div class="mb-2 d-flex align-items-center gap-2">
+        @if (Task.CreatedByUserId == AuthService.UserId)
+        {
+            <select class="form-select form-select-sm w-auto"
+                    @onchange="e =>
+                    {
+                        if (int.TryParse(e.Value?.ToString(), out var userId))
+                        {
+                            OnUserAssigned.InvokeAsync((Task, userId));
+                        }
+                    }">
+                  <option value="">Assign User…</option>
+                @foreach (var u in Users)
+                {
+                    <option value="@u.Id" selected="@(Task.AssignedUserId == u.Id)">
+                        @u.Username
+                    </option>
+                }
+            </select>
+        }
+
+        @if (Task.AssignedUserId.HasValue)
+        {
+            var assigned = Users.FirstOrDefault(u => u.Id == Task.AssignedUserId.Value);
+            <span class="badge @(assigned != null ? "bg-primary" : "bg-secondary")">
+                @(assigned?.Username ?? "Unassigned")
+            </span>
+        }
+        else
+        {
+            <span class="badge bg-secondary">Unassigned</span>
+        }
+    </div>
+
+    <!-- Status & Actions -->
+    <div class="d-flex gap-2 flex-wrap mt-2 align-items-center">
+        @if (Task.AssignedUserId == AuthService.UserId)
+        {
+            <select class="form-select form-select-sm w-auto"
+                    @onchange="e => OnStatusChanged.InvokeAsync((Task, e.Value?.ToString()))"
+                    value="@Task.Status">
+                <option value="ToDo">To Do</option>
+                <option value="InProgress">In Progress</option>
+                <option value="Done">Done</option>
+            </select>
+        }
+        else
+        {
+            <select class="form-select form-select-sm w-auto" disabled>
+                <option>@Task.Status</option>
+            </select>
+        }
+
+        @* Only allow viewing if user is project owner, task creator, or assigned user *@
+        @if (CanViewTask)
+        {
+            <button class="btn btn-sm btn-outline-primary" @onclick="() => OnViewTask.InvokeAsync(Task)">View</button>
+        }
+
+        @if (Task.CreatedByUserId == AuthService.UserId)
+        {
+            <button class="btn btn-sm btn-outline-danger" @onclick="() => OnDeleteTask.InvokeAsync(Task)">Delete</button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public TaskDto Task { get; set; } = default!;
+    [Parameter] public List<UserDto> Users { get; set; } = new();
+    [Parameter] public AuthService AuthService { get; set; } = default!;
+
+    [Parameter] public EventCallback<(TaskDto Task, string? NewStatus)> OnStatusChanged { get; set; }
+    [Parameter] public EventCallback<(TaskDto Task, int UserId)> OnUserAssigned { get; set; }
+    [Parameter] public EventCallback<TaskDto> OnDeleteTask { get; set; }
+    [Parameter] public EventCallback<TaskDto> OnViewTask { get; set; }
+
+    private bool CanViewTask => Task.AssignedUserId == AuthService.UserId
+                            || Task.CreatedByUserId == AuthService.UserId
+                            || Task.ProjectOwnerId == AuthService.UserId;
+}

@@ -1,0 +1,66 @@
+﻿@page "/createproject"
+@using TaskManagementWeb.Models.DTOs
+@using TaskManagementWeb.Services
+@inject AuthService AuthService
+@inject ProjectService ProjectService
+@inject NavigationManager Nav
+
+<h3 class="page-title text-center mb-4">Create New Project</h3>
+
+@if (!AuthService.IsAuthenticated)
+{
+    <p class="text-warning text-center">Redirecting to login...</p>
+}
+else
+{
+    <div class="d-flex justify-content-center">
+        <div class="card p-4 w-100" style="max-width: 500px;">
+            <EditForm Model="@newProjectModel" OnValidSubmit="CreateProjectAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+
+                <div class="mb-3">
+                    <label class="form-label">Project Name</label>
+                    <InputText class="form-control" @bind-Value="newProjectModel.Name" placeholder="Enter project name" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Project Description</label>
+                    <InputTextArea class="form-control" @bind-Value="newProjectModel.Description" placeholder="Enter project description" />
+                </div>
+
+                <button class="btn btn-primary w-100" type="submit">Create Project</button>
+
+                @if (!string.IsNullOrEmpty(createProjectError))
+                {
+                    <p class="text-danger mt-2">@createProjectError</p>
+                }
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private ProjectCreateDto newProjectModel = new();
+    private string createProjectError = string.Empty;
+
+    private async Task CreateProjectAsync()
+    {
+        createProjectError = string.Empty;
+
+        try
+        {
+            newProjectModel.UserId = AuthService.UserId;
+
+            var created = await ProjectService.CreateProjectAsync(newProjectModel);
+            if (created != null)
+            {
+                Nav.NavigateTo("/projects");
+            }
+        }
+        catch (Exception ex)
+        {
+            createProjectError = $"Failed to create project: {ex.Message}";
+        }
+    }
+}

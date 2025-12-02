@@ -6,100 +6,100 @@
 @inject TaskService TaskService
 @inject NavigationManager Nav
 
-<h3 class="page-title">Dashboard</h3>
+    @if (!initialized)
+    {
+        <p class="text-muted text-center mt-5">Loading...</p>
+    }
+    else if (!AuthService.IsAuthenticated)
+    {
+        <p class="text-warning text-center mt-5">Redirecting to login...</p>
+    }
+    else if (isLoading)
+    {
+        <p class="text-muted text-center mt-5">Loading projects...</p>
+    }
+    else
+    {
+        <h3 class="page-title mb-4">Dashboard</h3>
 
-@if (!initialized)
-{
-    <p class="text-muted text-center">Loading...</p>
-}
-else if (!AuthService.IsAuthenticated)
-{
-    <p class="text-warning text-center">Redirecting to login...</p>
-}
-else if (isLoading)
-{
-    <p class="text-muted text-center">Loading projects...</p>
-}
-else
-{
-    <!-- My Tasks -->
-    <section class="my-tasks-section mb-5">
-        <h4 class="page-title">My tasks</h4>
-
-        @if (myTasks.Count == 0)
-        {
-            <p class="text-muted text-center">You have no tasks assigned.</p>
-        }
-        else
-        {
-            <div class="row g-4">
-                @foreach (var task in myTasks)
-                {
-                    <div class="col-sm-6 col-md-4 col-lg-3">
-                        <div class="card task-details-card p-3 h-100">
-                            <strong class="task-title">@task.Title</strong>
-                            <p class="text-truncate task-desc">@task.Description</p>
-                            <p class="text-muted mb-1">
-                                Status: @FormatStatus(task.Status)
-                            </p>
-                            <p class="text-muted mb-1">
-                                Project: <span class="project-name">@projects.FirstOrDefault(p => p.Id == task.ProjectId)?.Name</span>
-                            </p>
-                            <p class="text-muted mb-0">
-                                Due: @(task.DueDate?.ToString("yyyy-MM-dd") ?? "No due date")
-                            </p>
-                        </div>
-                    </div>
-                }
-            </div>
-        }
-    </section>
-
-    <!-- Projects -->
-    <section class="projects-section">
-        <h4 class="page-title">Projects</h4>
-
-        @if (projects.Count == 0)
-        {
-            <p class="text-muted text-center">No projects available.</p>
-        }
-        else
-        {
-            <div class="row g-4">
-                @foreach (var p in projects)
-                {
-                    <div class="col-sm-6 col-md-4 col-lg-3">
-                        <div class="card project-card m-lg-5 p-3 h-100" style="cursor:pointer;" @onclick="() => OpenProject(p.Id)">
-                            <h5 class="project-name">@p.Name</h5>
-                            <p class="project-desc text-muted">@p.Description</p>
-
-                            <div class="task-summary mb-3">
-                                <span class="badge badge-status badge-total">Total: @taskCounts[p.Id].Total</span>
-                                <span class="badge badge-status badge-todo">To Do: @taskCounts[p.Id].ToDo</span>
-                                <span class="badge badge-status badge-inprogress">In Progress: @taskCounts[p.Id].InProgress</span>
-                                <span class="badge badge-status badge-done">Done: @taskCounts[p.Id].Done</span>
+        <!-- My Tasks -->
+        <div class="my-tasks-container mb-5">
+            <h3 class="page-title">My Tasks</h3>
+            @if (myTasks.Count == 0)
+            {
+                <p class="text-center text-muted">You have no tasks assigned.</p>
+            }
+            else
+            {
+                <div class="row g-4 m-3">
+                    @foreach (var task in myTasks)
+                    {
+                        <div class="col-sm-6 col-md-4 col-lg-3">
+                            <div class="card task-card p-3 h-100">
+                                <strong class="task-title">@task.Title</strong>
+                                <p class="text-truncate task-desc">@task.Description</p>
+                                <p class="text-muted mb-1">Status: @FormatStatus(task.Status)</p>
+                                <p class="text-muted mb-1">Project: <span class="project-name">@projects.FirstOrDefault(p => p.Id == task.ProjectId)?.Name</span></p>
+                                <p class="text-muted mb-0">Due: @(task.DueDate?.ToString("yyyy-MM-dd") ?? "No due date")</p>
                             </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
 
-                            @if (p.UserId == AuthService.UserId)
-                            {
-                                <button class="btn btn-sm btn-outline-danger mt-auto"
-                                        @onclick="() => DeleteProject(p.Id)"
-                                        @onclick:stopPropagation>
-                                    Delete
-                                </button>
-                            }
+        <!-- Projects -->
+        <div class="projects-container mb-2">
+            <h3 class="page-title">Projects</h3>
+
+            @if (projects.Count == 0)
+            {
+                <p class="text-center text-muted">No projects available.</p>
+            }
+            else
+            {
+                <div class="row g-4 m-2">
+                    <!-- Create Project Card -->
+                    <div class="col-sm-6 col-md-4 col-lg-3">
+                        <div class="card create-project-card p-3 h-100 d-flex align-items-center justify-content-center"
+                             @onclick="GoToCreateProject">
+                            <h5 class="text-primary">+ Create New Project</h5>
                         </div>
                     </div>
-                }
-            </div>
-        }
-    </section>
-}
+
+                    @foreach (var p in projects)
+                    {
+                        <div class="col-sm-6 col-md-4 col-lg-3">
+                            <div class="card project-card p-3 h-100" style="cursor:pointer;" @onclick="() => OpenProject(p.Id)">
+                                <h5 class="project-name">@p.Name</h5>
+                                <p class="project-desc text-muted">@p.Description</p>
+
+                                <div class="task-summary mb-3">
+                                    <span class="badge badge-total">Total: @(taskCounts.ContainsKey(p.Id) ? taskCounts[p.Id].Total : 0)</span>
+                                    <span class="badge badge-todo">To Do: @(taskCounts.ContainsKey(p.Id) ? taskCounts[p.Id].ToDo : 0)</span>
+                                    <span class="badge badge-inprogress">In Progress: @(taskCounts.ContainsKey(p.Id) ? taskCounts[p.Id].InProgress : 0)</span>
+                                    <span class="badge badge-done">Done: @(taskCounts.ContainsKey(p.Id) ? taskCounts[p.Id].Done : 0)</span>
+                                </div>
+
+                                @if (p.UserId == AuthService.UserId)
+                                {
+                                    <button class="btn btn-sm btn-outline-danger mt-auto"
+                                            @onclick="() => DeleteProject(p.Id)"
+                                            @onclick:stopPropagation>
+                                        Delete
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
 
 @code {
     private bool initialized = false;
     private bool isLoading = false;
-
     private List<ProjectDto> projects = new();
     private Dictionary<int, (int Total, int ToDo, int InProgress, int Done)> taskCounts = new();
     private List<TaskDto> myTasks = new();
@@ -109,13 +109,17 @@ else
         if (!firstRender) return;
 
         await AuthService.InitializeAsync();
-
         if (!AuthService.IsAuthenticated)
         {
             Nav.NavigateTo("/login", true);
             return;
         }
 
+        await LoadProjectsAsync();
+    }
+
+    private async Task LoadProjectsAsync()
+    {
         isLoading = true;
         try
         {
@@ -125,8 +129,7 @@ else
 
             foreach (var p in projects)
             {
-                var tasks = p.Tasks;
-
+                var tasks = p.Tasks ?? new List<TaskSummaryDto>();
                 taskCounts[p.Id] = (
                     Total: tasks.Count,
                     ToDo: tasks.Count(t => t.Status == "ToDo"),
@@ -157,17 +160,15 @@ else
     }
 
     private void OpenProject(int projectId) => Nav.NavigateTo($"/projects/{projectId}");
-
     private async Task DeleteProject(int projectId)
     {
-        var success = await ProjectService.DeleteProjectAsync(projectId);
-        if (success)
+        if (await ProjectService.DeleteProjectAsync(projectId))
         {
             projects.RemoveAll(p => p.Id == projectId);
+            taskCounts.Remove(projectId);
             StateHasChanged();
         }
     }
-
     private string FormatStatus(string? status) => status switch
     {
         "ToDo" => "To do",
@@ -175,4 +176,5 @@ else
         "Done" => "Done",
         _ => "Unknown"
     };
+    private void GoToCreateProject() => Nav.NavigateTo("/createproject");
 }

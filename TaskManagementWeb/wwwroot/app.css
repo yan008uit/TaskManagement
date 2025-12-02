@@ -1,20 +1,19 @@
-html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+/* Base Setup */
+html, body, #app, .page-container, .login-container, .nav {
+    height: 100%;
     margin: 0;
     padding: 0;
-    height: 100%;
-    width: 100%;
-    background: linear-gradient(120deg, #BADFDB, #FFA4A4);
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-attachment: fixed;
+    background-color: #BADFDB;
     color: #343b1b;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+/* Links */
 a, .btn-link {
     text-decoration: none;
 }
 
+/* Content */
 .content {
     padding-top: 1.1rem;
 }
@@ -23,6 +22,7 @@ h1:focus {
     outline: none;
 }
 
+/* Validation */
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #198754;
 }
@@ -46,19 +46,20 @@ h1:focus {
         content: "An error has occurred.";
     }
 
+/* Checkboxes */
 .darker-border-checkbox.form-check-input {
     border-color: #BADFDB;
 }
 
 /* Navigation */
 .nav {
-    background: #FCF9EA;
     height: 64px;
     color: #343b1b;
     padding: 0 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    background-color: #FCF9EA;
 }
 
 .nav-home {
@@ -83,12 +84,13 @@ h1:focus {
     display: inline-block;
     font-size: 14px;
     transition: all 0.2s ease;
+    cursor: pointer;
 }
 
-.nav-btn:hover {
+    .nav-btn:hover {
         transform: translateY(-2px) scale(1.03);
         box-shadow: 0 4px 10px rgba(255,164,164,0.5);
-}
+    }
 
 .nav-btn-light {
     background: #BADFDB;
@@ -139,7 +141,6 @@ button,
         cursor: not-allowed;
     }
 
-
 .btn:focus, .btn:active:focus, .form-control:focus, .form-check-input:focus {
     box-shadow: 0 0 0 0.1rem #FCF9EA, 0 0 0 0.25rem #BADFDB;
 }
@@ -151,7 +152,7 @@ button,
     align-items: center;
     min-height: calc(100vh - 64px);
     width: 100%;
-    background: linear-gradient(90deg, #BADFDB, #FFBDBD);
+    background-color: #BADFDB;
 }
 
 .login-card {
@@ -164,10 +165,10 @@ button,
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.login-card:hover {
+    .login-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-}
+    }
 
 .form-floating > .form-control {
     border-radius: 8px;
@@ -178,16 +179,6 @@ button,
 .form-floating > label {
     font-size: 0.9rem;
     padding-left: 0.75rem;
-}
-
-.login-card button {
-    border-radius: 8px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-}
-
-.login-card button:hover {
-        background-color: #FFBDBD;
 }
 
 /* Page Titles */
@@ -203,32 +194,25 @@ button,
     margin-bottom: 20px;
     margin-top: 30px;
     font-weight: 300;
-    color: #FCF9EA;
+    color: #343b1b;
     text-align: center;
 }
 
 /* Container */
 .container {
     max-width: 90%;
-    max-height: auto;
     padding: 0;
 }
 
-/* Project Details Card */
-.project-description {
-    font-size: 1rem;
-    color: #343b1b;
-}
-
-/* Project Task Cards */
-.project-card {
+/* Project Cards */
+.project-card, .task-details-card, .card {
     border-radius: 12px;
-    background: #FCF9EA;
+    background-color: #FCF9EA;
     box-shadow: 0 6px 15px rgba(0,0,0,0.1);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-    .project-card:hover {
+    .project-card:hover, .task-details-card:hover, .card:hover {
         transform: translateY(-3px);
         box-shadow: 0 10px 25px rgba(0,0,0,0.15);
     }
@@ -243,6 +227,7 @@ button,
     margin-bottom: 0.75rem;
 }
 
+/* Task Summary Badges */
 .task-summary {
     display: flex;
     flex-wrap: wrap;
@@ -250,7 +235,6 @@ button,
     margin-bottom: 1rem;
 }
 
-/* Badges */
 .badge-status {
     font-size: 0.75rem;
     font-weight: 500;
@@ -276,33 +260,6 @@ button,
     background-color: #628141;
 }
 
-/* General Card Styles */
-.card {
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
-.card-body .card {
-    border-radius: 0.4rem;
-    padding: 0.5rem 0.75rem;
-}
-
-    .card-body .card strong {
-        font-size: 1rem;
-        display: block;
-    }
-
-    .card-body .card p {
-        margin: 0.25rem 0 0;
-        font-size: 0.875rem;
-    }
-
-    .card-body .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        transition: all 0.2s ease-in-out;
-    }
-
 /* Task Status Cards */
 .task-todo {
     border-left: 4px solid #BF1A1A;
@@ -319,18 +276,6 @@ button,
     background-color: rgba(76, 255, 76, 0.15);
 }
 
-/* Task Details */
-.task-details-card {
-    border-radius: 12px;
-    height: 100%;
-    max-width: 75%;
-    margin: auto;
-    padding: 18px;
-    background: #FCF9EA;
-    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
 /* Comments */
 .comments-section li {
     padding: 10px;
@@ -343,7 +288,7 @@ button,
     margin-top: 8px;
 }
 
-/* Utility */
+/* Utilities */
 .d-flex.gap-2 {
     align-items: center;
     flex-wrap: wrap;

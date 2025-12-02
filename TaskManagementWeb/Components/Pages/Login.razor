@@ -1,10 +1,11 @@
 ﻿@page "/login"
+@using TaskManagementWeb.Models.DTOs
 @using TaskManagementWeb.Services
-@inject AuthService AuthService
+@inject AuthService Auth
 @inject NavigationManager Nav
 
 <div class="login-container">
-    <div class="card login-card shadow-sm p-4">
+    <div class="card login-card shadow-sm p-4 mx-auto" style="max-width: 400px;">
         <h3 class="text-center mb-4">Login</h3>
 
         @if (!string.IsNullOrEmpty(Error))
@@ -13,38 +14,70 @@
         }
 
         <div class="form-floating mb-3">
-            <input @bind="Username" type="text" class="form-control" id="floatingUsername" placeholder="Username" />
+            <input @bind="LoginModel.Username" class="form-control" id="floatingUsername" placeholder="Username" />
             <label for="floatingUsername">Username</label>
         </div>
+
         <div class="form-floating mb-3">
-            <input @bind="Password" type="password" class="form-control" id="floatingPassword" placeholder="Password" />
+            <input @bind="LoginModel.Password" type="password" class="form-control" id="floatingPassword" placeholder="Password" />
             <label for="floatingPassword">Password</label>
         </div>
 
-        <button class="btn btn-primary w-100 btn-lg" @onclick="HandleLogin">
-            Login
+        <button class="btn btn-primary w-100 btn-lg"
+                @onclick="HandleLogin"
+                disabled="@IsProcessing">
+
+            @if (IsProcessing)
+            {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                <text>Logging in...</text>
+            }
+            else
+            {
+                <text>Login</text>
+            }
         </button>
+
+        <div class="text-center mt-3">
+            <small>Don't have an account? <a href="/register">Register here</a></small>
+        </div>
     </div>
 </div>
 
 @code {
-    private string Username = "";
-    private string Password = "";
+    private LoginRequest LoginModel = new();
     private string? Error;
+    private bool IsProcessing = false;
+
+    protected override void OnInitialized()
+    {
+        if (Auth.IsAuthenticated)
+            Nav.NavigateTo("/projects", true);
+    }
 
     private async Task HandleLogin()
     {
+        if (IsProcessing) return;
+
+        IsProcessing = true;
         Error = null;
 
-        var token = await AuthService.Login(Username, Password);
+        if (string.IsNullOrWhiteSpace(LoginModel.Username) || string.IsNullOrWhiteSpace(LoginModel.Password))
+        {
+            Error = "Please fill in all fields.";
+            IsProcessing = false;
+            return;
+        }
+
+        var token = await Auth.Login(LoginModel.Username, LoginModel.Password);
 
         if (string.IsNullOrEmpty(token))
         {
             Error = "Invalid username or password.";
+            IsProcessing = false;
             return;
         }
 
-        Nav.NavigateTo("/projects");
-
+        Nav.NavigateTo("/projects", true);
     }
 }

@@ -4,7 +4,6 @@ using TaskManagementApi.Services;
 
 namespace TaskManagementApi.Controllers
 {
-
     [ApiController]
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
@@ -19,17 +18,18 @@ namespace TaskManagementApi.Controllers
         /// <summary>
         /// Registers a new user.
         /// </summary>
-        /// <response code = "200">Successfully registered user.</response>
-        /// <response code = "400">Invalid input data.</response>
+        /// <response code="200">Successfully registered user.</response>
+        /// <response code="400">Invalid input data.</response>
+        /// <response code="409">Username or email already exists.</response>
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
-                return BadRequest("All fields are required.");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             var user = await _authService.Register(request.Username, request.Email, request.Password);
             if (user == null)
-                return BadRequest("Username or email is already in use.");
+                return Conflict(new { message = "Username or email is already in use." });
 
             return Ok(new
             {
@@ -41,17 +41,18 @@ namespace TaskManagementApi.Controllers
         /// <summary>
         /// Authenticates a user and returns a JWT token.
         /// </summary>
-        /// <response code = "200">Login successful, and a token has been returned.</response>
-        /// <response code = "400">Invalid input data.</response>
+        /// <response code="200">Login successful, and a token has been returned.</response>
+        /// <response code="400">Invalid input data.</response>
+        /// <response code="401">Invalid username or password.</response>
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
-                return BadRequest("Username and password are required.");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             var token = await _authService.Login(request.Username, request.Password);
             if (token == null)
-                return Unauthorized("Invalid username or password.");
+                return Unauthorized(new { message = "Invalid username or password." });
 
             return Ok(new { token });
         }

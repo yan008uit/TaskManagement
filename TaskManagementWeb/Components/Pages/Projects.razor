@@ -1,5 +1,5 @@
 ﻿@page "/projects"
-@using TaskManagementWeb.Models
+@using TaskManagementWeb.Models.DTOs
 @using TaskManagementWeb.Services
 @inject AuthService AuthService
 @inject ProjectService ProjectService
@@ -57,34 +57,42 @@ else
 
     <!-- Projects -->
     <section class="projects-section">
-        <h4 class="page-title">Projects </h4>
-        <div class="row g-4">
-            @foreach (var p in projects)
-            {
-                <div class="col-sm-6 col-md-4 col-lg-3">
-                    <div class="card project-card m-lg-5 p-3 h-100" style="cursor:pointer;" @onclick="() => OpenProject(p.Id)">
-                        <h5 class="project-name">@p.Name</h5>
-                        <p class="project-desc text-muted">@p.Description</p>
+        <h4 class="page-title">Projects</h4>
 
-                        <div class="task-summary mb-3">
-                            <span class="badge badge-status badge-total">Total: @taskCounts[p.Id].Total</span>
-                            <span class="badge badge-status badge-todo">To Do: @taskCounts[p.Id].ToDo</span>
-                            <span class="badge badge-status badge-inprogress">In Progress: @taskCounts[p.Id].InProgress</span>
-                            <span class="badge badge-status badge-done">Done: @taskCounts[p.Id].Done</span>
+        @if (projects.Count == 0)
+        {
+            <p class="text-muted text-center">No projects available.</p>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var p in projects)
+                {
+                    <div class="col-sm-6 col-md-4 col-lg-3">
+                        <div class="card project-card m-lg-5 p-3 h-100" style="cursor:pointer;" @onclick="() => OpenProject(p.Id)">
+                            <h5 class="project-name">@p.Name</h5>
+                            <p class="project-desc text-muted">@p.Description</p>
+
+                            <div class="task-summary mb-3">
+                                <span class="badge badge-status badge-total">Total: @taskCounts[p.Id].Total</span>
+                                <span class="badge badge-status badge-todo">To Do: @taskCounts[p.Id].ToDo</span>
+                                <span class="badge badge-status badge-inprogress">In Progress: @taskCounts[p.Id].InProgress</span>
+                                <span class="badge badge-status badge-done">Done: @taskCounts[p.Id].Done</span>
+                            </div>
+
+                            @if (p.UserId == AuthService.UserId)
+                            {
+                                <button class="btn btn-sm btn-outline-danger mt-auto"
+                                        @onclick="() => DeleteProject(p.Id)"
+                                        @onclick:stopPropagation>
+                                    Delete
+                                </button>
+                            }
                         </div>
-
-                        @if (p.UserId == AuthService.UserId)
-                        {
-                            <button class="btn btn-sm btn-outline-danger mt-auto"
-                                    @onclick="() => DeleteProject(p.Id)"
-                                    @onclick:stopPropagation>
-                                Delete
-                            </button>
-                        }
                     </div>
-                </div>
-            }
-        </div>
+                }
+            </div>
+        }
     </section>
 }
 
@@ -126,17 +134,18 @@ else
                     Done: tasks.Count(t => t.Status == "Done")
                 );
 
-                myTasks.AddRange(tasks.Where(t => t.AssignedUserId == AuthService.UserId)
-                      .Select(t => new TaskDto
-                      {
-                          Id = t.Id,
-                          Title = t.Title,
-                          Status = t.Status,
-                          CreatedByUserId = t.CreatedByUserId,
-                          AssignedUserId = t.AssignedUserId,
-                          DueDate = t.DueDate,
-                          ProjectId = p.Id
-                      }));
+                myTasks.AddRange(tasks
+                    .Where(t => t.AssignedUserId == AuthService.UserId)
+                    .Select(t => new TaskDto
+                    {
+                        Id = t.Id,
+                        Title = t.Title,
+                        Status = t.Status,
+                        CreatedByUserId = t.CreatedByUserId,
+                        AssignedUserId = t.AssignedUserId,
+                        DueDate = t.DueDate,
+                        ProjectId = p.Id
+                    }));
             }
         }
         finally
@@ -159,11 +168,11 @@ else
         }
     }
 
-    private string FormatStatus(string status) => status switch
+    private string FormatStatus(string? status) => status switch
     {
         "ToDo" => "To do",
         "InProgress" => "In progress",
         "Done" => "Done",
-        _ => status
+        _ => "Unknown"
     };
 }

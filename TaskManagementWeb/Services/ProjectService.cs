@@ -1,4 +1,5 @@
 ﻿using TaskManagementWeb.Models;
+using TaskManagementWeb.Models.DTOs;
 
 namespace TaskManagementWeb.Services
 {

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace TaskManagementApi.Models.DTOs
+namespace TaskManagementWeb.Models.DTOs
 {
     public class TaskDto
     {

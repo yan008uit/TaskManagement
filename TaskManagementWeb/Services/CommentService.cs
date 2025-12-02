@@ -1,4 +1,4 @@
-﻿using TaskManagementWeb.Models;
+﻿using TaskManagementWeb.Models.DTOs;
 
 namespace TaskManagementWeb.Services
 {
@@ -6,14 +6,16 @@ namespace TaskManagementWeb.Services
     {
         private readonly ApiClient _api;
 
+        // Constructor that injects the API client
         public CommentService(ApiClient api) => _api = api;
 
+        // Logs an error with optional ID for context
         private void LogError(string action, Exception ex, int? id = null)
         {
             Console.WriteLine($"[CommentService] Error during '{action}'{(id.HasValue ? $" (ID: {id})" : "")}: {ex.Message}");
         }
 
-        // All comments for a task
+        // Fetch all comments for a specific task
         public async Task<List<CommentDto>> GetCommentsByTaskAsync(int taskId)
         {
             try
@@ -27,7 +29,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        //  Add a comment
+        // Add a new comment
         public async Task<CommentDto?> AddCommentAsync(CommentCreateUpdateDto dto)
         {
             try
@@ -41,7 +43,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Delete a comment
+        // Delete a comment by its ID
         public async Task<bool> DeleteCommentAsync(int commentId)
         {
             try

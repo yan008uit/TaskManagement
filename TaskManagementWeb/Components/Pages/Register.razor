@@ -1,43 +1,119 @@
 ﻿@page "/register"
+@using TaskManagementWeb.Models.DTOs
 @using TaskManagementWeb.Services
-@inject AuthService AuthService
+@inject AuthService Auth
 @inject NavigationManager Nav
 
-<h3>Register</h3>
+<div class="login-container">
+    <div class="card login-card shadow-sm p-4 mx-auto" style="max-width: 400px;">
+        <h3 class="text-center mb-4">Create Account</h3>
 
-<div class="mb-2">
-    <input @bind="Username" placeholder="Username" class="form-control" />
-</div>
-<div class="mb-2">
-    <input @bind="Email" placeholder="Email" class="form-control" />
-</div>
-<div class="mb-2">
-    <input @bind="Password" placeholder="Password" type="password" class="form-control" />
-</div>
-<button class="btn btn-success" @onclick="HandleRegister">Register</button>
+        @if (!string.IsNullOrEmpty(Error))
+        {
+            <div class="alert alert-danger">@Error</div>
+        }
 
-@if (!string.IsNullOrEmpty(Error))
-{
-    <div class="text-danger mt-2">@Error</div>
-}
+        @if (!string.IsNullOrEmpty(Success))
+        {
+            <div class="alert alert-success">@Success</div>
+        }
+
+        <div class="form-floating mb-3">
+            <input @bind="RegisterModel.Username" class="form-control" id="floatingUsername" placeholder="Username" />
+            <label for="floatingUsername">Username</label>
+        </div>
+
+        <div class="form-floating mb-3">
+            <input @bind="RegisterModel.Email" type="email" class="form-control" id="floatingEmail" placeholder="Email" />
+            <label for="floatingEmail">Email</label>
+        </div>
+
+        <div class="form-floating mb-3">
+            <input @bind="RegisterModel.Password" type="password" class="form-control" id="floatingPassword" placeholder="Password" />
+            <label for="floatingPassword">Password</label>
+        </div>
+
+        <div class="form-floating mb-3">
+            <input @bind="ConfirmPassword" type="password" class="form-control" id="floatingConfirmPassword" placeholder="Confirm Password" />
+            <label for="floatingConfirmPassword">Confirm Password</label>
+        </div>
+
+        <button class="btn btn-success w-100 btn-lg"
+                @onclick="HandleRegister"
+                disabled="@IsProcessing">
+
+            @if (IsProcessing)
+            {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                <text>Registering...</text>
+            }
+            else
+            {
+                <text>Register</text>
+            }
+        </button>
+
+        <div class="text-center mt-3">
+            <small>Already have an account? <a href="/login">Login here</a></small>
+        </div>
+    </div>
+</div>
 
 @code {
-    private string Username = "";
-    private string Email = "";
-    private string Password = "";
+    private RegisterRequest RegisterModel = new();
+    private string ConfirmPassword = "";
     private string? Error;
+    private string? Success;
+    private bool IsProcessing = false;
+
+    protected override void OnInitialized()
+    {
+        if (Auth.IsAuthenticated)
+            Nav.NavigateTo("/projects", true);
+    }
 
     private async Task HandleRegister()
     {
+        if (IsProcessing) return;
+
+        IsProcessing = true;
         Error = null;
-        var success = await AuthService.Register(Username, Email, Password);
-        if (success)
+        Success = null;
+
+        if (string.IsNullOrWhiteSpace(RegisterModel.Username) ||
+            string.IsNullOrWhiteSpace(RegisterModel.Email) ||
+            string.IsNullOrWhiteSpace(RegisterModel.Password) ||
+            string.IsNullOrWhiteSpace(ConfirmPassword))
         {
-            Nav.NavigateTo("/login", true);
+            Error = "Please fill in all fields.";
+            IsProcessing = false;
+            return;
         }
-        else
+
+        if (RegisterModel.Password != ConfirmPassword)
         {
-            Error = "Registration failed. Username or email may already exist.";
+            Error = "Passwords do not match.";
+            IsProcessing = false;
+            return;
         }
+
+        var (success, error) = await Auth.Register(
+            RegisterModel.Username,
+            RegisterModel.Email,
+            RegisterModel.Password
+        );
+
+        if (!success)
+        {
+            Error = error;
+            IsProcessing = false;
+            return;
+        }
+
+        Success = "You have been registered successfully! Redirecting...";
+        StateHasChanged();
+
+        await Task.Delay(1500);
+        Nav.NavigateTo("/login", true);
     }
 }

@@ -14,7 +14,7 @@
 }
 
 @code {
-    protected override void OnInitialized()
+    protected override void OnParametersSet()
     {
         if (Auth.IsAuthenticated)
         {

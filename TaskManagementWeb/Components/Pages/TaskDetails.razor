@@ -1,5 +1,5 @@
 ﻿@page "/tasks/{TaskId:int}"
-@using TaskManagementWeb.Models
+@using TaskManagementWeb.Models.DTOs
 @using TaskManagementWeb.Services
 @inject TaskService TaskService
 @inject CommentService CommentService
@@ -150,11 +150,15 @@ else
         }
     }
 
-    private string GetStatusClass(string status) => status switch
+    private string GetStatusClass(string? status)
     {
-        "ToDo" => "badge-todo",
-        "InProgress" => "badge-inprogress",
-        "Done" => "badge-done",
-        _ => "badge-secondary"
-    };
+        return status switch
+        {
+            "ToDo" => "badge-todo",
+            "InProgress" => "badge-inprogress",
+            "Done" => "badge-done",
+            _ => "badge-secondary"
+        };
+    }
+
 }

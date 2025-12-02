@@ -97,7 +97,7 @@ namespace TaskManagementApi.Controllers
 
         // PATCH: api/task/{id}/assign
         [HttpPatch("{id}/assign")]
-        public async Task<IActionResult> AssignUserToTask(int id, [FromBody] TaskAssignUsersDto dto)
+        public async Task<IActionResult> AssignUserToTask(int id, [FromBody] TaskAssignUserDto dto)
         {
             if (dto.UserId <= 0)
                 return BadRequest("Assigned user ID is required.");

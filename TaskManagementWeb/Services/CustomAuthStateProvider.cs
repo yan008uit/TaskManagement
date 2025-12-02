@@ -17,30 +17,41 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
     {
         string? token = _apiClient.GetToken();
 
+        // Not authenticated
         if (string.IsNullOrEmpty(token))
-            return Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity())));
+            return Task.FromResult(EmptyState());
 
+        // Validate and parse token
         try
         {
             var handler = new JwtSecurityTokenHandler();
             var jwt = handler.ReadJwtToken(token);
 
             if (jwt.ValidTo < DateTime.UtcNow)
-            {
-                return Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity())));
-            }
+                return Task.FromResult(EmptyState());
 
             var identity = new ClaimsIdentity(jwt.Claims, "jwt");
-            return Task.FromResult(new AuthenticationState(new ClaimsPrincipal(identity)));
+            var user = new ClaimsPrincipal(identity);
+
+            return Task.FromResult(new AuthenticationState(user));
         }
         catch
         {
-            return Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity())));
+            // Token is invalid or corrupted
+            return Task.FromResult(EmptyState());
         }
     }
 
     public void NotifyAuthenticationStateChanged()
     {
+        // Trigger re-evaluation of authentication state
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+    }
+
+    private AuthenticationState EmptyState()
+    {
+        return new AuthenticationState(
+            new ClaimsPrincipal(new ClaimsIdentity())
+        );
     }
 }

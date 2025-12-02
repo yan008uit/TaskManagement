@@ -1,8 +1,7 @@
-@using TaskManagementWeb.Models
+@using TaskManagementWeb.Models.DTOs
 @using TaskManagementWeb.Services
 
-<div class="card mb-3 p-3 @(Task.Status == "ToDo" ? "task-todo" :
-                                       Task.Status == "InProgress" ? "task-inprogress" : "task-done")">
+<div class="card mb-3 p-3 @(GetStatusClass(Task.Status))">
 
     <!-- Task Title & Description -->
     <strong class="project-name">@Task.Title</strong>
@@ -17,33 +16,20 @@
         @if (Task.CreatedByUserId == AuthService.UserId)
         {
             <select class="form-select form-select-sm w-auto"
-                    @onchange="e =>
-                    {
-                        if (int.TryParse(e.Value?.ToString(), out var userId))
-                        {
-                            OnUserAssigned.InvokeAsync((Task, userId));
-                        }
-                    }">
-                  <option value="">Assign User…</option>
+                    @bind-value="AssignedUserId"
+                    @bind-value:event="onchange">
+                <option value="">Assign User…</option>
                 @foreach (var u in Users)
                 {
-                    <option value="@u.Id" selected="@(Task.AssignedUserId == u.Id)">
-                        @u.Username
-                    </option>
+                    <option value="@u.Id">@u.Username</option>
                 }
             </select>
         }
-
-        @if (Task.AssignedUserId.HasValue)
-        {
-            var assigned = Users.FirstOrDefault(u => u.Id == Task.AssignedUserId.Value);
-            <span class="badge @(assigned != null ? "bg-primary" : "bg-secondary")">
-                @(assigned?.Username ?? "Unassigned")
-            </span>
-        }
         else
         {
-            <span class="badge bg-secondary">Unassigned</span>
+            <span class="badge @(GetAssignedUser()?.Username != null ? "bg-primary" : "bg-secondary")">
+                @(GetAssignedUser()?.Username ?? "Unassigned")
+            </span>
         }
     </div>
 
@@ -52,8 +38,8 @@
         @if (Task.AssignedUserId == AuthService.UserId)
         {
             <select class="form-select form-select-sm w-auto"
-                    @onchange="e => OnStatusChanged.InvokeAsync((Task, e.Value?.ToString()))"
-                    value="@Task.Status">
+                    @bind-value="TaskStatus"
+                    @bind-value:event="onchange">
                 <option value="ToDo">To Do</option>
                 <option value="InProgress">In Progress</option>
                 <option value="Done">Done</option>
@@ -62,11 +48,10 @@
         else
         {
             <select class="form-select form-select-sm w-auto" disabled>
-                <option>@Task.Status</option>
+                <option>@FormatStatus(Task.Status)</option>
             </select>
         }
 
-        @* Only allow viewing if user is project owner, task creator, or assigned user *@
         @if (CanViewTask)
         {
             <button class="btn btn-sm btn-outline-primary" @onclick="() => OnViewTask.InvokeAsync(Task)">View</button>
@@ -92,4 +77,54 @@
     private bool CanViewTask => Task.AssignedUserId == AuthService.UserId
                             || Task.CreatedByUserId == AuthService.UserId
                             || Task.ProjectOwnerId == AuthService.UserId;
+
+    private UserDto? GetAssignedUser()
+        => Task.AssignedUserId.HasValue ? Users.FirstOrDefault(u => u.Id == Task.AssignedUserId.Value) : null;
+
+    // Two-way binding for assigned user
+    private int? AssignedUserId
+    {
+        get => Task.AssignedUserId;
+        set
+        {
+            if (Task.AssignedUserId != value)
+            {
+                Task.AssignedUserId = value;
+                if (value.HasValue)
+                {
+                    _ = OnUserAssigned.InvokeAsync((Task, value.Value));
+                }
+            }
+        }
+    }
+
+    // Two-way binding for task status
+    private string? TaskStatus
+    {
+        get => Task.Status;
+        set
+        {
+            if (Task.Status != value)
+            {
+                Task.Status = value;
+                _ = OnStatusChanged.InvokeAsync((Task, value));
+            }
+        }
+    }
+
+    private string GetStatusClass(string? status) => status switch
+    {
+        "ToDo" => "task-todo",
+        "InProgress" => "task-inprogress",
+        "Done" => "task-done",
+        _ => ""
+    };
+
+    private string FormatStatus(string? status) => status switch
+    {
+        "ToDo" => "To do",
+        "InProgress" => "In progress",
+        "Done" => "Done",
+        _ => "Unknown"
+    };
 }

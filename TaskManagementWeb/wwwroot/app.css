@@ -1,4 +1,3 @@
-/* Base Styles */
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     margin: 0;
@@ -6,6 +5,9 @@ html, body {
     height: 100%;
     width: 100%;
     background: linear-gradient(120deg, #BADFDB, #FFA4A4);
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
     color: #343b1b;
 }
 

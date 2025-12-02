@@ -1,4 +1,4 @@
-﻿using TaskManagementWeb.Models;
+﻿using TaskManagementWeb.Models.DTOs;
 
 namespace TaskManagementWeb.Services
 {
@@ -42,11 +42,11 @@ namespace TaskManagementWeb.Services
         }
 
         // Create task
-        public async Task<TaskDto?> CreateTaskAsync(TaskCreateUpdateDto dto)
+        public async Task<TaskDto?> CreateTaskAsync(TaskCreateDto dto)
         {
             try
             {
-                return await _api.PostAsync<TaskCreateUpdateDto, TaskDto>("task", dto);
+                return await _api.PostAsync<TaskCreateDto, TaskDto>("task", dto);
             }
             catch (Exception ex)
             {
@@ -56,7 +56,7 @@ namespace TaskManagementWeb.Services
         }
 
         // Update task
-        public async Task<bool> UpdateTaskAsync(int id, TaskCreateUpdateDto dto)
+        public async Task<bool> UpdateTaskAsync(int id, TaskUpdateDto dto)
         {
             try
             {

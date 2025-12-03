@@ -1,0 +1,142 @@
+﻿@page "/tasks/edit/{Id:int}"
+@using TaskManagementWeb.Models.DTOs
+@using TaskManagementWeb.Services
+@inject TaskService TaskService
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<h3 class="mb-4">Edit Task</h3>
+
+@if (!initialized)
+{
+    <p class="text-muted">Loading...</p>
+}
+else if (!found)
+{
+    <div class="alert alert-danger">Task not found or you don't have permission.</div>
+}
+else
+{
+    <EditForm Model="editModel" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Title</label>
+            <InputText class="form-control" @bind-Value="editModel.Title" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <InputTextArea class="form-control" @bind-Value="editModel.Description" rows="4" />
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Assigned User Id</label>
+                <InputNumber class="form-control" @bind-Value="editModel.AssignedUserId" />
+                <div class="form-text">Enter user id to assign (or leave empty).</div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Due Date</label>
+                <InputDate class="form-control" @bind-Value="editModel.DueDate" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Status</label>
+            <InputSelect class="form-select" @bind-Value="editModel.Status">
+                <option value="ToDo">To do</option>
+                <option value="InProgress">In progress</option>
+                <option value="Done">Done</option>
+            </InputSelect>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" disabled="@saving">Save</button>
+            <button type="button" class="btn btn-secondary" @onclick="Cancel" disabled="@saving">Cancel</button>
+        </div>
+    </EditForm>
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="mt-3 alert @messageClass">@message</div>
+    }
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private TaskUpdateDto editModel = new();
+    private bool initialized = false;
+    private bool found = true;
+    private bool saving = false;
+    private string? message;
+    private string messageClass = "alert-success";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.InitializeAsync();
+        if (!AuthService.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        var task = await TaskService.GetTaskAsync(Id);
+        if (task == null)
+        {
+            found = false;
+            initialized = true;
+            return;
+        }
+
+        if (task.CreatedByUserId != AuthService.UserId && task.AssignedUserId != AuthService.UserId)
+        {
+            found = false;
+            initialized = true;
+            return;
+        }
+
+        editModel.Title = task.Title;
+        editModel.Description = task.Description;
+        editModel.Status = task.Status ?? "ToDo";
+        editModel.DueDate = task.DueDate;
+        editModel.AssignedUserId = task.AssignedUserId;
+
+        initialized = true;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        saving = true;
+        message = null;
+        try
+        {
+            var ok = await TaskService.UpdateTaskAsync(Id, editModel);
+            if (ok)
+            {
+                message = "Task updated.";
+                messageClass = "alert-success";
+                Nav.NavigateTo("/projects");
+            }
+            else
+            {
+                message = "Update failed (task not found or no permission).";
+                messageClass = "alert-danger";
+            }
+        }
+        catch (Exception ex)
+        {
+            message = "Error updating task: " + ex.Message;
+            messageClass = "alert-danger";
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private void Cancel() => Nav.NavigateTo("/projects");
+}

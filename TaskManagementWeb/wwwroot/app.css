@@ -1,11 +1,16 @@
 /* Base Setup */
-html, body, #app, .page-container, .login-container, .nav {
+html, body, #app, .page-container, .login-container {
     height: 100%;
     margin: 0;
     padding: 0;
-    background-color: #BADFDB;
+    width: 100%;
+    background: linear-gradient(to right, #70e1f5, #ffd194);
     color: #343b1b;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.nav {
+    background: #BADFDB;
 }
 
 /* Links */
@@ -165,11 +170,6 @@ button,
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-    .login-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-    }
-
 .form-floating > .form-control {
     border-radius: 8px;
     height: 3rem;
@@ -212,7 +212,7 @@ button,
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-    .project-card:hover, .task-details-card:hover, .card:hover {
+    .project-card:hover, .task-details-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 10px 25px rgba(0,0,0,0.15);
     }
@@ -225,6 +225,30 @@ button,
 .project-desc {
     font-size: 0.9rem;
     margin-bottom: 0.75rem;
+}
+
+.create-project-card {
+    transition: 0.2s ease-in-out;
+    border: 2px dashed #3f8cff;
+}
+
+    .create-project-card:hover {
+        background-color: #f3f8ff;
+        border-color: #2b6ed2;
+        transform: translateY(-2px);
+    }
+
+.create-project-icon {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #3f8cff;
+    line-height: 1;
+}
+
+.create-project-text {
+    font-size: 1rem;
+    color: #3f8cff;
+    font-weight: 600;
 }
 
 /* Task Summary Badges */

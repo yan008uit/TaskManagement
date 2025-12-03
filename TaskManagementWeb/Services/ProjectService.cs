@@ -57,7 +57,7 @@ namespace TaskManagementWeb.Services
         }
 
         // Update project
-        public async Task<bool> UpdateProjectAsync(int id, ProjectCreateDto dto)
+        public async Task<bool> UpdateProjectAsync(int id, ProjectUpdateDto dto)
         {
             try
             {

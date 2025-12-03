@@ -1,0 +1,112 @@
+﻿@page "/projects/edit/{Id:int}"
+@using TaskManagementWeb.Models.DTOs
+@using TaskManagementWeb.Services
+@inject ProjectService ProjectService
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<h3 class="page-title text-center mb-4">Edit Project</h3>
+
+@if (!initialized)
+{
+    <p class="text-muted text-center">Loading...</p>
+}
+else if (!found)
+{
+    <div class="alert alert-danger text-center">Project not found or you don't have permission.</div>
+}
+else
+{
+    <div class="d-flex justify-content-center">
+        <div class="card p-4 w-100" style="max-width: 500px;">
+            <EditForm Model="editModel" OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+
+                <div class="mb-3">
+                    <label class="form-label">Project Name</label>
+                    <InputText class="form-control" @bind-Value="editModel.Name" placeholder="Enter project name" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Project Description</label>
+                    <InputTextArea class="form-control" @bind-Value="editModel.Description" placeholder="Enter project description" rows="5" />
+                </div>
+
+                <button class="btn btn-primary w-100" type="submit" disabled="@saving">Save Project</button>
+                <button class="btn btn-secondary w-100 mt-2" type="button" @onclick="Cancel" disabled="@saving">Cancel</button>
+
+                @if (!string.IsNullOrEmpty(message))
+                {
+                    <p class="text-@(messageClass == "alert-success" ? "success" : "danger") mt-2">@message</p>
+                }
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private ProjectUpdateDto editModel = new();
+    private bool initialized = false;
+    private bool found = true;
+    private bool saving = false;
+    private string? message;
+    private string messageClass = "alert-success";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.InitializeAsync();
+        if (!AuthService.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        var project = await ProjectService.GetProjectAsync(Id);
+        if (project == null || project.UserId != AuthService.UserId)
+        {
+            found = false;
+            initialized = true;
+            return;
+        }
+
+        editModel.Name = project.Name;
+        editModel.Description = project.Description;
+        initialized = true;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        saving = true;
+        message = null;
+
+        try
+        {
+            var ok = await ProjectService.UpdateProjectAsync(Id, editModel);
+            if (ok)
+            {
+                message = "Project updated successfully.";
+                messageClass = "alert-success";
+                Nav.NavigateTo("/projects", forceLoad: true);
+            }
+            else
+            {
+                message = "Update failed (maybe you don't have permission).";
+                messageClass = "alert-danger";
+            }
+        }
+        catch (Exception ex)
+        {
+            message = "Error updating project: " + ex.Message;
+            messageClass = "alert-danger";
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+
+    private void Cancel() => Nav.NavigateTo("/projects", forceLoad: true);
+}

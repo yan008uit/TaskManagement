@@ -41,6 +41,20 @@ namespace TaskManagementWeb.Services
             }
         }
 
+        // Get a task with details
+        public async Task<TaskDetailsDto?> GetTaskDetailAsync(int id)
+        {
+            try
+            {
+                return await _api.GetAsync<TaskDetailsDto>($"task/{id}/details");
+            }
+            catch (Exception ex)
+            {
+                LogError("GetTaskDetail", ex, id);
+                return null;
+            }
+        }
+
         // Create task
         public async Task<TaskDto?> CreateTaskAsync(TaskCreateDto dto)
         {

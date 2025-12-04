@@ -8,15 +8,15 @@
 
 @if (!initialized)
 {
-    <p class="text-muted">Loading task…</p>
+    <p class="text-muted text-center mt-4">Loading task…</p>
 }
 else if (task == null)
 {
-    <p class="text-danger">Task not found.</p>
+    <p class="text-danger text-center mt-4">Task not found.</p>
 }
 else
 {
-    <h3 class="page-title">@task.Title</h3>
+    <h3 class="page-title text-center mb-3">@task.Title</h3>
 
     @if (!string.IsNullOrWhiteSpace(task.Description))
     {
@@ -25,57 +25,104 @@ else
         </p>
     }
 
-    <div class="card task-details-card">
-        <p>
-            <strong>Status:</strong>
-            <span class="badge @GetStatusClass(task.Status)">
-                @task.Status
-            </span>
-        </p>
+    <div class="container">
 
-        <h5 class="mt-4">Comments (@comments.Count)</h5>
+        <!-- TASK DETAILS CARD -->
+        <div class="task-details-card p-4 mb-4">
+
+            <p class="mb-2">
+                <strong>Project:</strong>
+                <span class="text-muted">@task.ProjectName</span>
+            </p>
+
+            <p class="mb-2">
+                <strong>Status:</strong>
+                <span class="badge @GetStatusClass(task.Status)">
+                    @task.Status
+                </span>
+            </p>
+
+            <p class="mb-2"><strong>Assigned to:</strong> @task.AssignedUsername</p>
+            <p class="mb-2"><strong>Created by:</strong> @task.CreatedByUsername</p>
+
+            <p class="mb-2">
+                <strong>Due date:</strong>
+                @(task.DueDate?.ToString("yyyy-MM-dd") ?? "No due date")
+            </p>
+
+            <!-- ACTION BUTTONS -->
+            @if (task.CreatedByUserId == AuthService.UserId ||
+                    task.AssignedUserId == AuthService.UserId)
+            {
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-sm btn-outline-primary" @onclick="() => EditTask(task.Id)">
+                        Edit Task
+                    </button>
+
+                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTask(task.Id)">
+                        Delete Task
+                    </button>
+                </div>
+            }
+        </div>
+
+        <!-- COMMENTS SECTION -->
+        <h4 class="section-title mt-4 mb-3">Comments (@comments.Count)</h4>
 
         @if (!comments.Any())
         {
             <div class="text-center text-muted my-3">
-                <i class="bi bi-chat-dots" style="font-size:1.5rem;"></i>
-                <p class="mb-0">No comments yet</p>
+                <i class="bi bi-chat-dots" style="font-size: 1.8rem;"></i>
+                <p class="mt-2 mb-0">No comments yet</p>
             </div>
         }
         else
         {
-            <ul class="list-group comments-section mb-3">
+            <ul class="list-group mb-4">
                 @foreach (var c in comments)
                 {
                     <li class="list-group-item d-flex justify-content-between align-items-start">
-                        <div>
+                        <div style="max-width: 85%;">
                             <strong>@c.Username</strong>
                             <small class="text-muted">@c.CreatedDate.ToString("g")</small>
-                            <p>@c.Text</p>
+                            <p class="mt-1 mb-1">@c.Text</p>
                         </div>
+
                         @if (c.UserId == AuthService.UserId)
                         {
-                            <button class="btn btn-sm btn-danger" @onclick="() => DeleteComment(c.Id)">Delete</button>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    @onclick="() => DeleteComment(c.Id)">
+                                Delete
+                            </button>
                         }
                     </li>
                 }
             </ul>
         }
 
-        <div class="add-comment d-flex gap-2">
-            <input type="text" class="form-control" placeholder="Add comment..." @bind="newCommentText" />
-            <button class="btn btn-primary" @onclick="AddComment">Add Comment</button>
+        <!-- ADD COMMENT -->
+        <div class="d-flex gap-2 mb-5">
+            <input type="text" class="form-control"
+                   placeholder="Add comment..."
+                   @bind="newCommentText" />
+
+            <button class="btn btn-primary" @onclick="AddComment">
+                Add Comment
+            </button>
         </div>
+
     </div>
 }
 
 @code {
     [Parameter] public int TaskId { get; set; }
 
-    private TaskDto? task;
+    private TaskDetailsDto? task;
     private List<CommentDto> comments = new();
     private string newCommentText = "";
     private bool initialized = false;
+
+    private bool redirectToLogin = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -83,7 +130,7 @@ else
 
         if (!AuthService.IsAuthenticated)
         {
-            Nav.NavigateTo("/login", true);
+            redirectToLogin = true;
             return;
         }
 
@@ -91,74 +138,92 @@ else
         initialized = true;
     }
 
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && redirectToLogin)
+        {
+            Nav.NavigateTo("/login", true);
+        }
+        return Task.CompletedTask;
+    }
+
     private async Task LoadTaskAsync()
     {
         try
         {
-            task = await TaskService.GetTaskAsync(TaskId);
+            task = await TaskService.GetTaskDetailAsync(TaskId);
             if (task != null)
-            {
                 comments = await CommentService.GetCommentsByTaskAsync(TaskId);
-            }
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"Error loading task: {ex.Message}");
             task = null;
         }
     }
 
     private async Task AddComment()
     {
-        var text = newCommentText?.Trim();
-        if (string.IsNullOrEmpty(text)) return;
+        if (string.IsNullOrWhiteSpace(newCommentText)) return;
 
         var dto = new CommentCreateUpdateDto
         {
             TaskItemId = TaskId,
-            Text = text
+            Text = newCommentText.Trim()
         };
 
-        try
+        var comment = await CommentService.AddCommentAsync(dto);
+        if (comment != null)
         {
-            var comment = await CommentService.AddCommentAsync(dto);
-            if (comment != null)
-            {
-                comments.Add(comment);
-                newCommentText = "";
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to add comment: {ex.Message}");
+            comments.Add(comment);
+            newCommentText = "";
         }
     }
 
     private async Task DeleteComment(int commentId)
     {
-        try
-        {
-            var ok = await CommentService.DeleteCommentAsync(commentId);
-            if (ok)
-            {
-                comments.RemoveAll(c => c.Id == commentId);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to delete comment: {ex.Message}");
-        }
+        if (await CommentService.DeleteCommentAsync(commentId))
+            comments.RemoveAll(c => c.Id == commentId);
     }
 
-    private string GetStatusClass(string? status)
-    {
-        return status switch
+    private string GetStatusClass(string? status) =>
+        status switch
         {
             "ToDo" => "badge-todo",
             "InProgress" => "badge-inprogress",
             "Done" => "badge-done",
             _ => "badge-secondary"
         };
+
+    private void EditTask(int taskId) =>
+        Nav.NavigateTo($"/tasks/edit/{taskId}");
+
+    private async Task DeleteTask(int taskId)
+    {
+        if (task == null) return;
+
+        if (task.CreatedByUserId != AuthService.UserId &&
+            task.AssignedUserId != AuthService.UserId)
+        {
+            return;
+        }
+
+        try
+        {
+            var success = await TaskService.DeleteTaskAsync(taskId);
+
+            if (success)
+            {
+                Nav.NavigateTo("/projects", true);
+            }
+            else
+            {
+                Console.WriteLine("Delete failed (task not found or no permission).");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error deleting task: " + ex.Message);
+        }
     }
 
 }

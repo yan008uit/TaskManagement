@@ -212,7 +212,7 @@ button,
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-    .project-card:hover, .task-details-card:hover {
+    .project-card:hover, .task-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 10px 25px rgba(0,0,0,0.15);
     }

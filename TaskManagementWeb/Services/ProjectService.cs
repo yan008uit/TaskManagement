@@ -1,11 +1,14 @@
-﻿using TaskManagementWeb.Models;
-using TaskManagementWeb.Models.DTOs;
+﻿using TaskManagementWeb.Models.DTOs;
 
 namespace TaskManagementWeb.Services
 {
     public class ProjectService
     {
         private readonly ApiClient _api;
+
+        // Cached users
+        private List<UserDto> _users = new();
+        private bool _usersLoaded = false;
 
         public ProjectService(ApiClient api) => _api = api;
 
@@ -14,7 +17,32 @@ namespace TaskManagementWeb.Services
             Console.WriteLine($"[ProjectService] Error during '{action}'{(id.HasValue ? $" (ID: {id})" : "")}: {ex.Message}");
         }
 
-        // Get all projects visible to the user (owns or has tasks)
+        // Load all users (cached)
+        private async Task LoadUsersAsync()
+        {
+            if (_usersLoaded) return;
+
+            try
+            {
+                _users = await _api.GetAsync<List<UserDto>>("user") ?? new List<UserDto>();
+            }
+            catch (Exception ex)
+            {
+                LogError("LoadUsers", ex);
+                _users = new List<UserDto>();
+            }
+
+            _usersLoaded = true;
+        }
+
+        // Public method to get users
+        public async Task<List<UserDto>> GetUsersAsync()
+        {
+            await LoadUsersAsync();
+            return _users;
+        }
+
+        // Get all projects visible to the user
         public async Task<List<ProjectDto>> GetVisibleProjectsAsync()
         {
             try
@@ -28,7 +56,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Get a project
+        // Get project by ID
         public async Task<ProjectDto?> GetProjectAsync(int id)
         {
             try

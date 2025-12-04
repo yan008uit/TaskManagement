@@ -60,7 +60,7 @@ else
         @foreach (var group in new[] { ("To Do", todo), ("In Progress", inProgress), ("Done", done) })
         {
             <div class="col-md-4">
-                <div class="card project-card h-100">
+                <div class="card h-100">
                     <div class="card-header">
                         <strong>@group.Item1 (@group.Item2.Count)</strong>
                     </div>
@@ -116,23 +116,11 @@ else
             return;
         }
 
-        await LoadUsers();
+        users = await ProjectService.GetUsersAsync();
         await LoadProject();
 
         initialized = true;
         StateHasChanged();
-    }
-
-    private async Task LoadUsers()
-    {
-        try
-        {
-            users = await ApiClient.GetAsync<List<UserDto>>("User");
-        }
-        catch
-        {
-            users = new List<UserDto>();
-        }
     }
 
     private async Task LoadProject()
@@ -211,7 +199,8 @@ else
 
     private async Task DeleteTask(TaskDto task)
     {
-        if (task.CreatedByUserId != AuthService.UserId) return;
+        if (task.CreatedByUserId != AuthService.UserId && task.AssignedUserId != AuthService.UserId)
+            return;
 
         await TaskService.DeleteTaskAsync(task.Id);
 

@@ -3,7 +3,11 @@
 @inject AuthService Auth
 @inject NavigationManager Nav
 
-@if (!Auth.IsAuthenticated)
+@if (!initialized)
+{
+    <p class="text-muted text-center mt-4">Checking authentication...</p>
+}
+else if (!Auth.IsAuthenticated)
 {
     <div class="text-center py-5">
         <h1 class="page-title">Welcome to Task Manager</h1>
@@ -14,11 +18,21 @@
 }
 
 @code {
-    protected override void OnParametersSet()
+    private bool initialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!firstRender) return;
+
+        await Auth.InitializeAsync();
+
         if (Auth.IsAuthenticated)
         {
             Nav.NavigateTo("/projects", true);
+            return;
         }
+
+        initialized = true;
+        StateHasChanged();
     }
 }

@@ -66,8 +66,10 @@
     private string? Success;
     private bool IsProcessing = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        await Auth.InitializeAsync();
+
         if (Auth.IsAuthenticated)
             Nav.NavigateTo("/projects", true);
     }
@@ -110,10 +112,10 @@
             return;
         }
 
-        Success = "You have been registered successfully! Redirecting...";
+        Success = "Successfully registered! Redirecting...";
         StateHasChanged();
 
-        await Task.Delay(1500);
+        await Task.Delay(1000);
         Nav.NavigateTo("/login", true);
     }
 }

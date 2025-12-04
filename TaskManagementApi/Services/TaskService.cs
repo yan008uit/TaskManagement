@@ -29,7 +29,7 @@ namespace TaskManagementApi.Services
                 Id = t.Id,
                 Title = t.Title,
                 Description = t.Description,
-                Status = t.Status.ToString(),  // <- convert enum to string
+                Status = t.Status.ToString(),
                 CreatedDate = t.CreatedDate,
                 DueDate = t.DueDate,
                 ProjectId = t.ProjectId,
@@ -73,12 +73,57 @@ namespace TaskManagementApi.Services
             };
         }
 
+        public async Task<TaskDetailsDto?> GetTaskDetailsByIdAsync(int taskId, int userId)
+        {
+            var task = await _context.TaskItems
+                .Include(t => t.Project)
+                .Include(t => t.AssignedUser)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.Comments)
+                    .ThenInclude(c => c.User)
+                .FirstOrDefaultAsync(t => t.Id == taskId);
+
+            if (task == null) return null;
+
+            if (task.Project.UserId != userId &&
+                task.CreatedByUserId != userId &&
+                task.AssignedUserId != userId)
+                return null;
+
+            return new TaskDetailsDto
+            {
+                Id = task.Id,
+                Title = task.Title,
+                Description = task.Description,
+                Status = task.Status.ToString(),
+                CreatedDate = task.CreatedDate,
+                DueDate = task.DueDate,
+                ProjectId = task.ProjectId,
+
+                ProjectName = task.Project?.Name,
+
+                CreatedByUserId = task.CreatedByUserId,
+                CreatedByUsername = task.CreatedByUser?.Username,
+                AssignedUserId = task.AssignedUserId,
+                AssignedUsername = task.AssignedUser?.Username,
+                AssignedUserEmail = task.AssignedUser?.Email,
+
+                Comments = task.Comments.Select(c => new CommentDto
+                {
+                    Id = c.Id,
+                    Text = c.Text,
+                    CreatedDate = c.CreatedDate,
+                    UserId = c.UserId,
+                    Username = c.User?.Username
+                }).ToList()
+            };
+        }
+
         public async Task<TaskDto?> CreateTaskAsync(TaskCreateDto dto, int userId)
         {
             var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == dto.ProjectId);
             if (project == null) return null;
 
-            // parse string Status to enum
             var statusEnum = Enum.TryParse<TaskStatus>(dto.Status, out var s) ? s : TaskStatus.ToDo;
 
             var task = new TaskItem
@@ -162,7 +207,10 @@ namespace TaskManagementApi.Services
         public async Task<bool> DeleteTaskAsync(int taskId, int userId)
         {
             var task = await _context.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId);
-            if (task == null || task.CreatedByUserId != userId) return false;
+            if (task == null) return false;
+
+            if (task.CreatedByUserId != userId && task.AssignedUserId != userId)
+                return false;
 
             _context.TaskItems.Remove(task);
             await _context.SaveChangesAsync();

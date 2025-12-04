@@ -34,7 +34,7 @@ namespace TaskManagementApi.Services
             Id = t.Id,
             Title = t.Title,
             Description = t.Description,
-            Status = t.Status.ToString(),  // <- convert enum to string
+            Status = t.Status.ToString(),
             CreatedDate = t.CreatedDate,
             DueDate = t.DueDate,
             ProjectId = t.ProjectId,
@@ -142,11 +142,15 @@ namespace TaskManagementApi.Services
         // --------------------
         public async Task<bool> DeleteProjectAsync(int id, int userId)
         {
-            var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
-            if (project == null) return false;
+            var project = await _context.Projects
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+
+            if (project == null)
+                return false;
 
             _context.Projects.Remove(project);
             await _context.SaveChangesAsync();
+
             return true;
         }
 

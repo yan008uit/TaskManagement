@@ -49,10 +49,17 @@
     private string? Error;
     private bool IsProcessing = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!firstRender) return;
+
+        await Auth.InitializeAsync();
+
         if (Auth.IsAuthenticated)
+        {
             Nav.NavigateTo("/projects", true);
+            return;
+        }
     }
 
     private async Task HandleLogin()
@@ -62,7 +69,8 @@
         IsProcessing = true;
         Error = null;
 
-        if (string.IsNullOrWhiteSpace(LoginModel.Username) || string.IsNullOrWhiteSpace(LoginModel.Password))
+        if (string.IsNullOrWhiteSpace(LoginModel.Username) ||
+            string.IsNullOrWhiteSpace(LoginModel.Password))
         {
             Error = "Please fill in all fields.";
             IsProcessing = false;

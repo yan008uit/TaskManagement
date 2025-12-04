@@ -23,24 +23,49 @@ else
     <h3 class="page-title mb-4">Dashboard</h3>
 
     <!-- My Tasks -->
-    <div class="my-tasks-container mb-5">
-        <h3 class="page-title">My Tasks</h3>
+    <div class="projects-container mb-2">
+        <h4 class="section-title">My Tasks</h4>
 
-        @if (myTasks.Count == 0)
-        {
-            <p class="text-center text-muted">You have no tasks assigned.</p>
-        }
-        else
-        {
-            <div class="row g-4 m-3">
+        <div class="row g-4 p-3">
+            <!-- Add Task Card -->
+            <div class="col-sm-6 col-md-4 col-lg-3 d-flex">
+                <div class="card create-project-card p-3 d-flex flex-column align-items-center justify-content-center"
+                     style="cursor:pointer; width:100%; text-align:center;"
+                     @onclick="GoToCreateTask">
+                    <div class="d-flex flex-column align-items-center">
+                        <div class="create-task-icon mb-1" style="font-size:2rem;">+</div>
+                        <span class="create-task-text">Add Task</span>
+                    </div>
+                </div>
+            </div>
+
+            @if (myTasks.Count == 0)
+            {
+                <div class="col-12">
+                    <p class="text-center text-muted mt-3">You have no tasks assigned.</p>
+                </div>
+            }
+            else
+            {
                 @foreach (var task in myTasks)
                 {
                     <div class="col-sm-6 col-md-4 col-lg-3 d-flex">
-                        <div class="card task-card p-3 w-100 d-flex flex-column">
+                        <div class="card task-card p-3 w-100 d-flex flex-column"
+                             style="cursor:pointer;"
+                             @onclick="() => OpenTask(task.Id)">
+
                             <strong class="task-title">@task.Title</strong>
                             <p class="text-truncate task-desc">@task.Description</p>
+                            <p class="text-muted mb-1">
+                                Project:
+                                <span class="project-name">@projects.FirstOrDefault(p => p.Id == task.ProjectId)?.Name</span>
+                            </p>
+                            <p class="text-muted mb-3">Due: @(task.DueDate?.ToString("yyyy-MM-dd") ?? "No due date")</p>
 
-                            <div class="mb-2">
+                            <!-- Status Dropdown -->
+                            <div class="mb-2"
+                                 @onclick:stopPropagation="true"
+                                 @onchange:stopPropagation="true">
                                 <label class="text-muted small">Status:</label>
                                 <InputSelect class="form-select form-select-sm"
                                              Value="task.Status"
@@ -52,42 +77,20 @@ else
                                 </InputSelect>
                             </div>
 
-                            <p class="text-muted mb-1">
-                                Project:
-                                <span class="project-name">@projects.FirstOrDefault(p => p.Id == task.ProjectId)?.Name</span>
-                            </p>
-
-                            <p class="text-muted mb-3">Due: @(task.DueDate?.ToString("yyyy-MM-dd") ?? "No due date")</p>
-
-                            <!-- EDIT & DELETE (if creator or assignee) -->
-                            @if (task.CreatedByUserId == AuthService.UserId || task.AssignedUserId == AuthService.UserId)
-                            {
-                                <div class="d-flex gap-2 mt-auto">
-                                    <button class="btn btn-sm btn-outline-primary"
-                                            @onclick="() => EditTask(task.Id)">
-                                        Edit
-                                    </button>
-
-                                    <button class="btn btn-sm btn-outline-danger"
-                                            @onclick="() => DeleteTask(task.Id)">
-                                        Delete
-                                    </button>
-                                </div>
-                            }
                         </div>
                     </div>
                 }
-            </div>
-        }
+            }
+        </div>
     </div>
 
     <!-- Projects -->
     <div class="projects-container mb-2">
-        <h3 class="page-title">Projects</h3>
+        <h4 class="section-title">Projects</h4>
 
-        <div class="row g-4 m-2">
+        <div class="row g-4 p-3">
             <div class="col-sm-6 col-md-4 col-lg-3 d-flex">
-                <div class="card create-project-card p-3 m-2 d-flex flex-column align-items-center justify-content-center"
+                <div class="card create-project-card p-3 d-flex flex-column align-items-center justify-content-center"
                      style="cursor:pointer; width:100%; text-align:center;"
                      @onclick="GoToCreateProject">
                     <div class="d-flex flex-column align-items-center">
@@ -150,9 +153,6 @@ else
     private bool isLoading = false;
     private List<ProjectDto> projects = new();
     private Dictionary<int, (int Total, int ToDo, int InProgress, int Done)> taskCounts = new();
-    private List<TaskDto> todo = new();
-    private List<TaskDto> inProgress = new();
-    private List<TaskDto> done = new();
     private List<TaskDto> myTasks = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -175,32 +175,7 @@ else
         try
         {
             projects = await ProjectService.GetVisibleProjectsAsync() ?? new();
-            taskCounts.Clear();
-            myTasks.Clear();
-
-            foreach (var p in projects)
-            {
-                var tasks = p.Tasks ?? new List<TaskSummaryDto>();
-                taskCounts[p.Id] = (
-                    Total: tasks.Count,
-                    ToDo: tasks.Count(t => t.Status == "ToDo"),
-                    InProgress: tasks.Count(t => t.Status == "InProgress"),
-                    Done: tasks.Count(t => t.Status == "Done")
-                );
-
-                myTasks.AddRange(tasks
-                    .Where(t => t.AssignedUserId == AuthService.UserId)
-                    .Select(t => new TaskDto
-                    {
-                        Id = t.Id,
-                        Title = t.Title,
-                        Status = t.Status,
-                        CreatedByUserId = t.CreatedByUserId,
-                        AssignedUserId = t.AssignedUserId,
-                        DueDate = t.DueDate,
-                        ProjectId = p.Id,
-                    }));
-            }
+            RebuildTasksAndCounts();
         }
         finally
         {
@@ -210,50 +185,44 @@ else
         }
     }
 
-    private async Task RefreshProjectsAsync()
+    private void RebuildTasksAndCounts()
     {
-        isLoading = true;
-        try
-        {
-            projects = await ProjectService.GetVisibleProjectsAsync() ?? new();
-            taskCounts.Clear();
-            myTasks.Clear();
+        taskCounts.Clear();
+        myTasks.Clear();
 
-            foreach (var p in projects)
-            {
-                var tasks = p.Tasks ?? new List<TaskSummaryDto>();
-                taskCounts[p.Id] = (
-                    Total: tasks.Count,
-                    ToDo: tasks.Count(t => t.Status == "ToDo"),
-                    InProgress: tasks.Count(t => t.Status == "InProgress"),
-                    Done: tasks.Count(t => t.Status == "Done")
-                );
-
-                myTasks.AddRange(tasks
-                    .Where(t => t.AssignedUserId == AuthService.UserId)
-                    .Select(t => new TaskDto
-                    {
-                        Id = t.Id,
-                        Title = t.Title,
-                        Status = t.Status,
-                        CreatedByUserId = t.CreatedByUserId,
-                        AssignedUserId = t.AssignedUserId,
-                        DueDate = t.DueDate,
-                        ProjectId = p.Id,
-                    }));
-            }
-        }
-        finally
+        foreach (var p in projects)
         {
-            isLoading = false;
-            StateHasChanged();
+            var tasks = p.Tasks ?? new List<TaskSummaryDto>();
+            taskCounts[p.Id] = (
+                Total: tasks.Count,
+                ToDo: tasks.Count(t => t.Status == "ToDo"),
+                InProgress: tasks.Count(t => t.Status == "InProgress"),
+                Done: tasks.Count(t => t.Status == "Done")
+            );
+
+            myTasks.AddRange(tasks
+                .Where(t => t.AssignedUserId == AuthService.UserId)
+                .Select(t => new TaskDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    Status = t.Status,
+                    CreatedByUserId = t.CreatedByUserId,
+                    AssignedUserId = t.AssignedUserId,
+                    DueDate = t.DueDate,
+                    ProjectId = p.Id,
+                }));
         }
     }
 
     private void OpenProject(int projectId) => Nav.NavigateTo($"/projects/{projectId}");
     private void EditProject(int projectId) => Nav.NavigateTo($"/projects/edit/{projectId}");
-    private void EditTask(int taskId) => Nav.NavigateTo($"/tasks/edit/{taskId}");
+    private void GoToCreateTask()
+    {
+        Nav.NavigateTo("/tasks/create");
+    }
     private void GoToCreateProject() => Nav.NavigateTo("/createproject");
+    private void OpenTask(int taskId) => Nav.NavigateTo($"/tasks/{taskId}");
 
     private async Task DeleteProject(int projectId)
     {
@@ -261,32 +230,9 @@ else
         {
             projects.RemoveAll(p => p.Id == projectId);
             taskCounts.Remove(projectId);
-            StateHasChanged();
-        }
-    }
 
-    private async Task DeleteTask(int taskId)
-    {
-        if (await TaskService.DeleteTaskAsync(taskId))
-        {
-            myTasks.RemoveAll(t => t.Id == taskId);
-
-            // update taskCounts in case the task belonged to loaded projects
-            foreach (var p in projects)
-            {
-                var tasks = p.Tasks?.ToList() ?? new List<TaskSummaryDto>();
-                tasks.RemoveAll(t => t.Id == taskId);
-                p.Tasks = tasks;
-                if (taskCounts.ContainsKey(p.Id))
-                {
-                    taskCounts[p.Id] = (
-                        Total: tasks.Count,
-                        ToDo: tasks.Count(x => x.Status == "ToDo"),
-                        InProgress: tasks.Count(x => x.Status == "InProgress"),
-                        Done: tasks.Count(x => x.Status == "Done")
-                    );
-                }
-            }
+            // Remove tasks of deleted project
+            myTasks.RemoveAll(t => t.ProjectId == projectId);
 
             StateHasChanged();
         }
@@ -318,16 +264,13 @@ else
             existingTask.Status = newStatus;
         }
 
-        // Update taskCounts for project
+        // Update taskCounts
         var project = projects.FirstOrDefault(p => p.Id == task.ProjectId);
         if (project != null)
         {
             var tasks = project.Tasks ?? new List<TaskSummaryDto>();
             var found = tasks.FirstOrDefault(t => t.Id == task.Id);
-            if (found != null)
-            {
-                found.Status = newStatus;
-            }
+            if (found != null) found.Status = newStatus;
 
             taskCounts[project.Id] = (
                 Total: tasks.Count,
@@ -339,37 +282,4 @@ else
 
         StateHasChanged();
     }
-
-    private void RemoveTaskFromCurrentList(TaskDto task)
-    {
-        todo.Remove(task);
-        inProgress.Remove(task);
-        done.Remove(task);
-    }
-
-    private void AddTaskToList(TaskDto task)
-    {
-        if (task.Status == null) return;
-
-        switch (task.Status)
-        {
-            case "ToDo":
-                todo.Add(task);
-                break;
-            case "InProgress":
-                inProgress.Add(task);
-                break;
-            case "Done":
-                done.Add(task);
-                break;
-        }
-    }
-
-    private string FormatStatus(string? status) => status switch
-    {
-        "ToDo" => "To do",
-        "InProgress" => "In progress",
-        "Done" => "Done",
-        _ => "Unknown"
-    };
 }

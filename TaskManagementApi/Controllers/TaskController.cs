@@ -47,6 +47,19 @@ namespace TaskManagementApi.Controllers
             return Ok(task);
         }
 
+        // GET: api/task/{id}/details
+        [HttpGet("{id}/details")]
+        public async Task<IActionResult> GetTaskDetailsByIdAsync(int id)
+        {
+            int userId = GetUserId();
+            var task = await _taskService.GetTaskDetailsByIdAsync(id, userId);
+
+            if (task == null)
+                return NotFound("Task not found or no access.");
+
+            return Ok(task);
+        }
+
         // POST: api/task
         [HttpPost]
         public async Task<IActionResult> CreateTask([FromBody] TaskCreateDto dto)

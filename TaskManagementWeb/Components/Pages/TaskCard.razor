@@ -57,7 +57,7 @@
             <button class="btn btn-sm btn-outline-primary" @onclick="() => OnViewTask.InvokeAsync(Task)">View</button>
         }
 
-        @if (Task.CreatedByUserId == AuthService.UserId)
+        @if (CanDeleteTask)
         {
             <button class="btn btn-sm btn-outline-danger" @onclick="() => OnDeleteTask.InvokeAsync(Task)">Delete</button>
         }
@@ -77,6 +77,9 @@
     private bool CanViewTask => Task.AssignedUserId == AuthService.UserId
                             || Task.CreatedByUserId == AuthService.UserId
                             || Task.ProjectOwnerId == AuthService.UserId;
+
+    private bool CanDeleteTask => Task.AssignedUserId == AuthService.UserId
+                               || Task.CreatedByUserId == AuthService.UserId;
 
     private UserDto? GetAssignedUser()
         => Task.AssignedUserId.HasValue ? Users.FirstOrDefault(u => u.Id == Task.AssignedUserId.Value) : null;

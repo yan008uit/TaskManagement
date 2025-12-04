@@ -1,22 +1,16 @@
-﻿@page "/tasks/edit/{Id:int}"
+﻿@page "/tasks/create"
 @using TaskManagementWeb.Models.DTOs
 @using TaskManagementWeb.Services
 @inject TaskService TaskService
-@inject ProjectService ProjectService
 @inject AuthService AuthService
+@inject ProjectService ProjectService
 @inject NavigationManager Nav
 
-<h3 class="page-title text-center mb-4">Edit Task</h3>
+<h3 class="page-title text-center mb-4">Add Task</h3>
 
 @if (!initialized)
 {
     <p class="text-muted text-center">Loading...</p>
-}
-else if (!found)
-{
-    <div class="alert alert-danger text-center">
-        Task not found or you don't have permission.
-    </div>
 }
 else
 {
@@ -33,11 +27,6 @@ else
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Project</label>
-                    <input class="form-control" value="@projects.FirstOrDefault(p => p.Id == editModel.ProjectId)?.Name" readonly />
-                </div>
-
-                <div class="mb-3">
                     <label class="form-label">Description</label>
                     <InputTextArea class="form-control" @bind-Value="editModel.Description" rows="4" />
                 </div>
@@ -50,6 +39,17 @@ else
                             @foreach (var user in users)
                             {
                                 <option value="@user.Id">@user.Username</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Project</label>
+                        <InputSelect class="form-select" @bind-Value="editModel.ProjectId">
+                            <option value="">Select a project</option>
+                            @foreach (var project in projects)
+                            {
+                                <option value="@project.Id">@project.Name</option>
                             }
                         </InputSelect>
                     </div>
@@ -85,11 +85,8 @@ else
 }
 
 @code {
-    [Parameter] public int Id { get; set; }
-
-    private TaskUpdateDto editModel = new();
+    private TaskCreateDto editModel = new();
     private bool initialized = false;
-    private bool found = true;
     private bool saving = false;
     private string? message;
     private string messageClass = "alert-success";
@@ -107,28 +104,16 @@ else
             return;
         }
 
-        // Load projects and users
-        projects = await ProjectService.GetVisibleProjectsAsync() ?? new();
+        var allProjects = await ProjectService.GetVisibleProjectsAsync() ?? new List<ProjectDto>();
+        projects = allProjects
+            .Where(p => p.UserId == AuthService.UserId)
+            .ToList();
+
         users = await ProjectService.GetUsersAsync();
 
-        var task = await TaskService.GetTaskAsync(Id);
-
-        if (task == null ||
-            (task.CreatedByUserId != AuthService.UserId && task.AssignedUserId != AuthService.UserId))
-        {
-            found = false;
-            initialized = true;
-            return;
-        }
-
-        editModel.Title = task.Title;
-        editModel.Description = task.Description;
-        editModel.Status = task.Status ?? "ToDo";
-        editModel.DueDate = task.DueDate;
-        editModel.AssignedUserId = task.AssignedUserId;
-        editModel.ProjectId = task.ProjectId;
-
+        editModel.Status = "ToDo";
         initialized = true;
+
     }
 
     private async Task HandleValidSubmit()
@@ -138,30 +123,30 @@ else
 
         try
         {
-            if (editModel.AssignedUserId == 0)
+            if (editModel.ProjectId == 0 || editModel.AssignedUserId == 0)
             {
-                message = "Please select a user.";
+                message = "Please select a project and a user.";
                 messageClass = "alert-danger";
                 return;
             }
 
-            var ok = await TaskService.UpdateTaskAsync(Id, editModel);
+            var createdTask = await TaskService.CreateTaskAsync(editModel);
 
-            if (ok)
+            if (createdTask != null)
             {
-                message = "Task updated successfully.";
+                message = "Task created successfully!";
                 messageClass = "alert-success";
-                Nav.NavigateTo($"/tasks/{Id}", true);
+                Nav.NavigateTo($"/projects", true);
             }
             else
             {
-                message = "Update failed (task not found or no permission).";
+                message = "Failed to create task.";
                 messageClass = "alert-danger";
             }
         }
         catch (Exception ex)
         {
-            message = "Error updating task: " + ex.Message;
+            message = "Error: " + ex.Message;
             messageClass = "alert-danger";
         }
         finally
@@ -171,5 +156,5 @@ else
     }
 
     private void Cancel() =>
-        Nav.NavigateTo($"/tasks/{Id}", true);
+        Nav.NavigateTo("/projects", true);
 }

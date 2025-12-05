@@ -118,7 +118,7 @@ public class AuthService
 
         try
         {
-            var response = _apiClient.PostAsync<LoginRequest, LoginResponse>("Auth/login", request).Result;
+            var response = await _apiClient.PostAsync<LoginRequest, LoginResponse>("Auth/login", request);
 
             if (string.IsNullOrEmpty(response?.Token))
                 return null;

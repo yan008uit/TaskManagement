@@ -6,16 +6,16 @@ namespace TaskManagementWeb.Services
     {
         private readonly ApiClient _api;
 
-        // Constructor that injects the API client
+        // Inject the shared API client used for all HTTP calls.
         public CommentService(ApiClient api) => _api = api;
 
-        // Logs an error with optional ID for context
+        // Basic internal logger for debugging and contextual error tracking.
         private void LogError(string action, Exception ex, int? id = null)
         {
             Console.WriteLine($"[CommentService] Error during '{action}'{(id.HasValue ? $" (ID: {id})" : "")}: {ex.Message}");
         }
 
-        // Fetch all comments for a specific task
+        // Retrieves all comments associated with a specific task.
         public async Task<List<CommentDto>> GetCommentsByTaskAsync(int taskId)
         {
             try
@@ -29,7 +29,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Add a new comment
+        // Creates a new comment for a task and returns the created item.
         public async Task<CommentDto?> AddCommentAsync(CommentCreateUpdateDto dto)
         {
             try
@@ -43,7 +43,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Delete a comment by its ID
+        // Removes a comment by its unique ID.
         public async Task<bool> DeleteCommentAsync(int commentId)
         {
             try

@@ -3,25 +3,28 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<NoWarn>$(NoWarn);1591</NoWarn>
 	</PropertyGroup>
+
 	<ItemGroup>
 		<None Include="wwwroot\css\site.css" />
 		<None Include="wwwroot\index.html" />
 	</ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.9" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.10" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.10">
+
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.10" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.10" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.10">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
+
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
 	</ItemGroup>
-	<PropertyGroup>
-    	<GenerateDocumentationFile>true</GenerateDocumentationFile>
-    	<NoWarn>$(NoWarn);1591</NoWarn>
-  	</PropertyGroup>
 </Project>

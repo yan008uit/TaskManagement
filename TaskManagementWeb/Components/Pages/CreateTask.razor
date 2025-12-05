@@ -10,32 +10,44 @@
 
 @if (!initialized)
 {
-    <p class="text-muted text-center">Loading...</p>
+    <div class="text-center text-muted py-5">
+        <div class="spinner-border mb-2"></div>
+        <p>Loading...</p>
+    </div>
 }
 else
 {
     <div class="d-flex justify-content-center">
-        <div class="card p-4 w-100" style="max-width: 800px;">
+        <div class="card shadow-sm p-4 w-100" style="max-width: 800px;">
 
             <EditForm Model="editModel" OnValidSubmit="HandleValidSubmit">
                 <DataAnnotationsValidator />
-                <ValidationSummary class="text-danger" />
+                <ValidationSummary class="text-danger mb-3" />
 
-                <div class="mb-3">
-                    <label class="form-label">Task Title</label>
-                    <InputText class="form-control" @bind-Value="editModel.Title" />
+                <!-- Title -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">
+                        Task Title
+                    </label>
+                    <InputText class="form-control rounded-3" @bind-Value="editModel.Title" placeholder="Enter task title..." />
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Description</label>
-                    <InputTextArea class="form-control" @bind-Value="editModel.Description" rows="4" />
+                <!-- Description -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Description</label>
+                    <InputTextArea class="form-control rounded-3"
+                                   rows="4"
+                                   @bind-Value="editModel.Description"
+                                   placeholder="Describe the task...">
+                    </InputTextArea>
                 </div>
 
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Assign to User</label>
-                        <InputSelect class="form-select" @bind-Value="editModel.AssignedUserId">
-                            <option value="">Select a user</option>
+                    <!-- Assign User -->
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label fw-semibold">Assigned user</label>
+                        <InputSelect class="form-select rounded-3" @bind-Value="editModel.AssignedUserId">
+                            <option disabled value="">Select user</option>
                             @foreach (var user in users)
                             {
                                 <option value="@user.Id">@user.Username</option>
@@ -43,10 +55,11 @@ else
                         </InputSelect>
                     </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Project</label>
-                        <InputSelect class="form-select" @bind-Value="editModel.ProjectId">
-                            <option value="">Select a project</option>
+                    <!-- Project -->
+                    <div class="col-md-6 mb-4">
+                        <label class="form-label fw-semibold">Project</label>
+                        <InputSelect class="form-select rounded-3" @bind-Value="editModel.ProjectId">
+                            <option disabled value="">Select project</option>
                             @foreach (var project in projects)
                             {
                                 <option value="@project.Id">@project.Name</option>
@@ -55,28 +68,39 @@ else
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Due Date</label>
-                    <InputDate class="form-control" @bind-Value="editModel.DueDate" />
+                <!-- Due Date -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Due Date</label>
+                    <InputDate class="form-control rounded-3" @bind-Value="editModel.DueDate" />
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Status</label>
-                    <InputSelect class="form-select" @bind-Value="editModel.Status">
+                <!-- Status -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Status</label>
+                    <InputSelect class="form-select rounded-3" @bind-Value="editModel.Status">
                         <option value="ToDo">To Do</option>
                         <option value="InProgress">In Progress</option>
                         <option value="Done">Done</option>
                     </InputSelect>
                 </div>
 
-                <button class="btn btn-primary w-100" type="submit" disabled="@saving">Save</button>
-                <button class="btn btn-secondary w-100 mt-2" type="button" @onclick="Cancel" disabled="@saving">Cancel</button>
+                <!-- Buttons -->
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary py-2" type="submit" disabled="@saving">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Save Task
+                    </button>
+
+                    <button class="btn btn-outline-secondary py-2" type="button" @onclick="Cancel" disabled="@saving">
+                        Cancel
+                    </button>
+                </div>
 
                 @if (!string.IsNullOrEmpty(message))
                 {
-                    <p class="text-@(messageClass == "alert-success" ? "success" : "danger") mt-2">
+                    <div class="alert @(messageClass) mt-3 rounded-3">
                         @message
-                    </p>
+                    </div>
                 }
             </EditForm>
 
@@ -104,16 +128,12 @@ else
             return;
         }
 
-        var allProjects = await ProjectService.GetVisibleProjectsAsync() ?? new List<ProjectDto>();
-        projects = allProjects
-            .Where(p => p.UserId == AuthService.UserId)
-            .ToList();
+        projects = await ProjectService.GetVisibleProjectsAsync();
 
         users = await ProjectService.GetUsersAsync();
 
         editModel.Status = "ToDo";
         initialized = true;
-
     }
 
     private async Task HandleValidSubmit()

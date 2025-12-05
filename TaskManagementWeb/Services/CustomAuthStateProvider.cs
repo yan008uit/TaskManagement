@@ -8,50 +8,71 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
 {
     private readonly ApiClient _apiClient;
 
+    // Holds the current authenticated user (or empty identity if not logged in).
+    private ClaimsPrincipal _currentUser = new(new ClaimsIdentity());
+
     public CustomAuthStateProvider(ApiClient apiClient)
     {
         _apiClient = apiClient;
     }
 
+    // REQUIRED BY BLAZOR
+    // Blazor calls this method anytime it needs to know "who is logged in?".
     public override Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        string? token = _apiClient.GetToken();
-
-        // Not authenticated
-        if (string.IsNullOrEmpty(token))
-            return Task.FromResult(EmptyState());
-
-        // Validate and parse token
-        try
+        // If a JWT token exists in local storage.
+        if (!string.IsNullOrEmpty(_apiClient.GetToken()))
         {
-            var handler = new JwtSecurityTokenHandler();
-            var jwt = handler.ReadJwtToken(token);
+            try
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var jwt = handler.ReadJwtToken(_apiClient.GetToken());
 
-            if (jwt.ValidTo < DateTime.UtcNow)
-                return Task.FromResult(EmptyState());
+                // If the token is expired = treat the user as logged out.
+                if (jwt.ValidTo < DateTime.UtcNow)
+                {
+                    _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+                    return Task.FromResult(new AuthenticationState(_currentUser));
+                }
 
-            var identity = new ClaimsIdentity(jwt.Claims, "jwt");
-            var user = new ClaimsPrincipal(identity);
-
-            return Task.FromResult(new AuthenticationState(user));
+                // If the token is valid = extract claims and create authenticated user.
+                _currentUser = new ClaimsPrincipal(
+                    new ClaimsIdentity(jwt.Claims, "jwt")
+                );
+            }
+            catch
+            {
+                // If token decoding failed for any reason = logout state.
+                _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+            }
         }
-        catch
+        else
         {
-            // Token is invalid or corrupted
-            return Task.FromResult(EmptyState());
+            // If no token = not authenticated.
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
         }
+
+        return Task.FromResult(new AuthenticationState(_currentUser));
     }
 
-    public void NotifyAuthenticationStateChanged()
+    // Replaces the current identity and notifies Blazor about the change.
+    public void SetUserAuthenticated(ClaimsIdentity? identity)
     {
-        // Trigger re-evaluation of authentication state
+        if (identity == null)
+        {
+            _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+        }
+        else
+        {
+            _currentUser = new ClaimsPrincipal(identity);
+        }
+
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
 
-    private AuthenticationState EmptyState()
+    // Forces Blazor to re-evaluate authentication state.
+    public void NotifyStateChanged()
     {
-        return new AuthenticationState(
-            new ClaimsPrincipal(new ClaimsIdentity())
-        );
+        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
 }

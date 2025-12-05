@@ -8,12 +8,13 @@ namespace TaskManagementWeb.Services
 
         public TaskService(ApiClient api) => _api = api;
 
+        // Centralized error logging for consistent output and easier debugging.
         private void LogError(string action, Exception ex, int? id = null)
         {
             Console.WriteLine($"[TaskService] Error during '{action}'{(id.HasValue ? $" (ID: {id})" : "")}: {ex.Message}");
         }
 
-        // Get all tasks for a project
+        // Retrieves all tasks that belong to a specific project.
         public async Task<List<TaskDto>> GetTasksByProjectAsync(int projectId)
         {
             try
@@ -27,7 +28,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Get a task
+        // Fetches a single task by its ID.
         public async Task<TaskDto?> GetTaskAsync(int id)
         {
             try
@@ -41,7 +42,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Get a task with details
+        // Retrieves a task including comments, project info, assigned user, etc.
         public async Task<TaskDetailsDto?> GetTaskDetailAsync(int id)
         {
             try
@@ -55,7 +56,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Create task
+        // Creates a new task and returns the created record.
         public async Task<TaskDto?> CreateTaskAsync(TaskCreateDto dto)
         {
             try
@@ -69,7 +70,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Update task
+        // Updates the basic attributes of an existing task.
         public async Task<bool> UpdateTaskAsync(int id, TaskUpdateDto dto)
         {
             try
@@ -83,7 +84,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Delete task
+        // Deletes a task.
         public async Task<bool> DeleteTaskAsync(int id)
         {
             try
@@ -97,7 +98,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Assign single user
+        // Assigns a single user to the task.
         public async Task<bool> AssignUserAsync(int taskId, int userId)
         {
             try
@@ -112,7 +113,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        //  Update status
+        // Updates only the status field.
         public async Task<bool> UpdateStatusAsync(int taskId, string status)
         {
             try

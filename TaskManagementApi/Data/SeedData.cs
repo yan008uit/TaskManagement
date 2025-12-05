@@ -8,7 +8,7 @@ namespace TaskManagementApi.Data
     {
         public static void EnsureSeedData(AppDbContext db)
         {
-            db.Database.Migrate();
+            db.Database.EnsureCreated();
 
             // If already seeded, skip
             if (db.Users.Any())

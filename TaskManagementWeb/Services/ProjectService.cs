@@ -6,18 +6,19 @@ namespace TaskManagementWeb.Services
     {
         private readonly ApiClient _api;
 
-        // Cached users
+        // Cached list of users to avoid repeatedly fetching them.
         private List<UserDto> _users = new();
         private bool _usersLoaded = false;
 
         public ProjectService(ApiClient api) => _api = api;
 
+        // Internal helper for consistent error logging.
         private void LogError(string action, Exception ex, int? id = null)
         {
             Console.WriteLine($"[ProjectService] Error during '{action}'{(id.HasValue ? $" (ID: {id})" : "")}: {ex.Message}");
         }
 
-        // Load all users (cached)
+        // Loads all users once per application session.
         private async Task LoadUsersAsync()
         {
             if (_usersLoaded) return;
@@ -35,14 +36,14 @@ namespace TaskManagementWeb.Services
             _usersLoaded = true;
         }
 
-        // Public method to get users
+        // Retrieves all users.
         public async Task<List<UserDto>> GetUsersAsync()
         {
             await LoadUsersAsync();
             return _users;
         }
 
-        // Get all projects visible to the user
+        // Retrieves all projects.
         public async Task<List<ProjectDto>> GetVisibleProjectsAsync()
         {
             try
@@ -56,7 +57,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Get project by ID
+        // Retrieves a single project by its ID.
         public async Task<ProjectDto?> GetProjectAsync(int id)
         {
             try
@@ -70,7 +71,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Create project
+        // Request to create a new project.
         public async Task<ProjectDto?> CreateProjectAsync(ProjectCreateDto dto)
         {
             try
@@ -84,7 +85,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Update project
+        // Updates an existing project with new data.
         public async Task<bool> UpdateProjectAsync(int id, ProjectUpdateDto dto)
         {
             try
@@ -98,7 +99,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Delete project
+        // Deletes a project.
         public async Task<bool> DeleteProjectAsync(int id)
         {
             try

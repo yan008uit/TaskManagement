@@ -47,7 +47,7 @@ else
                     <div class="col-md-6 mb-4">
                         <label class="form-label fw-semibold">Assigned user</label>
                         <InputSelect class="form-select rounded-3" @bind-Value="editModel.AssignedUserId">
-                            <option disabled value="">Select user</option>
+                            <option disabled value="">Select a user</option>
                             @foreach (var user in users)
                             {
                                 <option value="@user.Id">@user.Username</option>
@@ -57,9 +57,9 @@ else
 
                     <!-- Project -->
                     <div class="col-md-6 mb-4">
-                        <label class="form-label fw-semibold">Project</label>
+                        <label class="form-label fw-semibold">Assigned Project</label>
                         <InputSelect class="form-select rounded-3" @bind-Value="editModel.ProjectId">
-                            <option disabled value="">Select project</option>
+                            <option disabled value="">Select a project</option>
                             @foreach (var project in projects)
                             {
                                 <option value="@project.Id">@project.Name</option>
@@ -71,7 +71,11 @@ else
                 <!-- Due Date -->
                 <div class="mb-4">
                     <label class="form-label fw-semibold">Due Date</label>
-                    <InputDate class="form-control rounded-3" @bind-Value="editModel.DueDate" />
+                    <InputDate @bind-Value="editModel.DueDate"
+                               class="form-control rounded-3"
+                               TValue="DateTime"
+                               id="dueDate"
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" />
                 </div>
 
                 <!-- Status -->
@@ -129,12 +133,14 @@ else
         }
 
         projects = await ProjectService.GetVisibleProjectsAsync();
-
         users = await ProjectService.GetUsersAsync();
 
         editModel.Status = "ToDo";
+        editModel.DueDate = DateTime.Today.AddDays(7);
+
         initialized = true;
     }
+
 
     private async Task HandleValidSubmit()
     {

@@ -11,9 +11,9 @@ namespace TaskManagementApi.Controllers
     [Authorize]
     public class ProjectController : ControllerBase
     {
-        private readonly ProjectService _projectService;
+        private readonly IProjectService _projectService;
 
-        public ProjectController(ProjectService projectService)
+        public ProjectController(IProjectService projectService)
         {
             _projectService = projectService;
         }
@@ -76,8 +76,15 @@ namespace TaskManagementApi.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateProject([FromBody] ProjectCreateDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var userId = GetUserId();
             var createdProject = await _projectService.CreateProjectAsync(dto, userId);
+
+            if (createdProject == null)
+                return BadRequest("Failed to create project.");
+
             return CreatedAtAction(nameof(GetProject), new { id = createdProject.Id }, createdProject);
         }
 

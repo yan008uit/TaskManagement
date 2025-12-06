@@ -5,7 +5,7 @@ using TaskManagementApi.Models.DTOs;
 
 namespace TaskManagementApi.Services
 {
-    public class CommentService
+    public class CommentService : ICommentService
     {
         private readonly AppDbContext _context;
 
@@ -14,7 +14,16 @@ namespace TaskManagementApi.Services
             _context = context;
         }
 
-        // Get all comments for a task
+        // --------------------
+        // Get all comments for a specific task
+        // --------------------
+        /// <summary>
+        /// Retrieves all comments associated with a given task.
+        /// Only returns comments if the user has access to the task (creator, assigned, or project owner).
+        /// </summary>
+        /// <param name="taskId">The ID of the task.</param>
+        /// <param name="userId">The ID of the requesting user.</param>
+        /// <returns>List of CommentDto or null if the task is not accessible.</returns>
         public async Task<IEnumerable<CommentDto>?> GetCommentsByTaskAsync(int taskId, int userId)
         {
             var task = await _context.TaskItems
@@ -43,7 +52,15 @@ namespace TaskManagementApi.Services
             });
         }
 
-        // Creates a new comment
+        // --------------------
+        // Create a new comment
+        // --------------------
+        /// <summary>
+        /// Creates a new comment on a task if the user has access.
+        /// </summary>
+        /// <param name="dto">CommentCreateUpdateDto containing TaskItemId and text.</param>
+        /// <param name="userId">ID of the user creating the comment.</param>
+        /// <returns>The created CommentDto or null if task not accessible.</returns>
         public async Task<CommentDto?> CreateCommentAsync(CommentCreateUpdateDto dto, int userId)
         {
             var task = await _context.TaskItems
@@ -80,7 +97,15 @@ namespace TaskManagementApi.Services
             };
         }
 
-        // Deletes a comment
+        // --------------------
+        // Delete a comment
+        // --------------------
+        /// <summary>
+        /// Deletes a comment if the requesting user is the author.
+        /// </summary>
+        /// <param name="commentId">ID of the comment to delete.</param>
+        /// <param name="userId">ID of the user attempting to delete the comment.</param>
+        /// <returns>True if deleted, false otherwise.</returns>
         public async Task<bool> DeleteCommentAsync(int commentId, int userId)
         {
             var comment = await _context.Comments
@@ -96,6 +121,5 @@ namespace TaskManagementApi.Services
             await _context.SaveChangesAsync();
             return true;
         }
-
     }
 }

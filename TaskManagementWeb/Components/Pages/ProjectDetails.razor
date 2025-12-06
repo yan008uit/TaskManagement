@@ -1,8 +1,8 @@
 ﻿@page "/projects/{ProjectId:int}"
 @using TaskManagementWeb.Models.DTOs
 @using TaskManagementWeb.Services
-@inject ProjectService ProjectService
-@inject TaskService TaskService
+@inject ProjectApiService ProjectService
+@inject TaskApiService TaskService
 @inject AuthService AuthService
 @inject ApiClient ApiClient
 @inject NavigationManager Nav
@@ -210,25 +210,23 @@ else
 
     private void RemoveTaskFromCurrentList(TaskDto task)
     {
-        todo.Remove(task);
-        inProgress.Remove(task);
-        done.Remove(task);
+        todo.RemoveAll(t => t.Id == task.Id);
+        inProgress.RemoveAll(t => t.Id == task.Id);
+        done.RemoveAll(t => t.Id == task.Id);
     }
 
     private void AddTaskToList(TaskDto task)
     {
-        if (task.Status == null) return;
-
         switch (task.Status)
         {
             case "ToDo":
-                todo.Add(task);
+                if (!todo.Any(t => t.Id == task.Id)) todo.Add(task);
                 break;
             case "InProgress":
-                inProgress.Add(task);
+                if (!inProgress.Any(t => t.Id == task.Id)) inProgress.Add(task);
                 break;
             case "Done":
-                done.Add(task);
+                if (!done.Any(t => t.Id == task.Id)) done.Add(task);
                 break;
         }
     }

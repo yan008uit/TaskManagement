@@ -5,83 +5,90 @@ using System.Security.Claims;
 using System.Text;
 using TaskManagementApi.Data;
 using TaskManagementApi.Models;
+using TaskManagementApi.Services;
 
-namespace TaskManagementApi.Services
+public class AuthService : IAuthService
 {
-    public class AuthService
+    private readonly AppDbContext _context;
+    private readonly IConfiguration _config;
+
+    public AuthService(AppDbContext context, IConfiguration config)
     {
-        private readonly AppDbContext _context;
-        private readonly IConfiguration _config;
+        _context = context;
+        _config = config;
+    }
 
-        public AuthService(AppDbContext context, IConfiguration config)
+    // --------------------
+    // Register a new user
+    // --------------------
+    /// <summary>
+    /// Registers a new user with username, email, and password.
+    /// Returns null if username or email already exists.
+    /// Password is hashed before storing.
+    /// </summary>
+    public async Task<User?> Register(string username, string email, string password)
+    {
+        if (await _context.Users.AnyAsync(u => u.Username == username || u.Email == email))
+            return null;
+
+        var user = new User
         {
-            _context = context;
-            _config = config;
-        }
+            Username = username,
+            Email = email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password)
+        };
 
-        public async Task<User?> Register(string username, string email, string password)
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        return user;
+    }
+
+    // --------------------
+    // Login an existing user
+    // --------------------
+    /// <summary>
+    /// Authenticates a user by username and password.
+    /// Returns a JWT token if successful, otherwise null.
+    /// </summary>
+    public async Task<string?> Login(string username, string password)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+
+        if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            return null;
+
+        return GenerateJwtToken(user);
+    }
+
+    // --------------------
+    // Generate JWT token
+    // --------------------
+    /// <summary>
+    /// Creates a JWT token containing user ID and username claims.
+    /// Token expires in 8 hours.
+    /// </summary>
+    private string GenerateJwtToken(User user)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
         {
-            // Checks if username and email already exists
-            if (await _context.Users.AnyAsync(u => u.Username == username || u.Email == email))
-                return null;
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), // User ID
+            new Claim(ClaimTypes.Name, user.Username),               // Username
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()), // Subject
+            new Claim(JwtRegisteredClaimNames.UniqueName, user.Username) // Unique username
+        };
 
-            // Creates a new user
-            var user = new User
-            {
-                Username = username,
-                Email = email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password)
-            };
+        var token = new JwtSecurityToken(
+            issuer: _config["Jwt:Issuer"],        // Token issuer
+            audience: _config["Jwt:Audience"],    // Token audience
+            claims: claims,                       // Claims
+            expires: DateTime.UtcNow.AddHours(8), // Expiration
+            signingCredentials: creds             // Signing credentials
+        );
 
-            // Saves information in the database
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return user;
-        }
-
-        public async Task<string?> Login(string username, string password)
-        {
-            // Checks if username exist and if password is correct.
-            // Retunrs null if username or password is wrong
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
-            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-                return null;
-
-            // Generates a token with a successful login
-            return GenerateJwtToken(user);
-        }
-
-        private string GenerateJwtToken(User user)
-        {
-            // Loads key from config and signing credentials using key and HMACSHA256
-            var key = new SymmetricSecurityKey(
-    Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
-);
-
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            // Claims included in JWT for users identity 
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
-
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.UniqueName, user.Username)
-            };
-
-            // Creates a JWT token
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(8),
-                signingCredentials: creds
-                );
-
-            // Returns token as a JWTT string
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

@@ -1,26 +1,31 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TaskManagementApi.Data;
 using TaskManagementApi.Models.DTOs;
+using TaskManagementApi.Services;
 
-namespace TaskManagementApi.Services
+public class UserService : IUserService
 {
-    public class UserService
+    private readonly AppDbContext _context;
+
+    public UserService(AppDbContext context)
     {
-        private readonly AppDbContext _context;
+        _context = context;
+    }
 
-        public UserService(AppDbContext context)
-        {
-            _context = context;
-        }
-
-        public async Task<List<UserDto>> GetAllUsersAsync()
-        {
-            return await _context.Users
-                .Select(u => new UserDto
-                {
-                    Id = u.Id,
-                    Username = u.Username,
-                }).ToListAsync();
-        }
+    // --------------------
+    // Get all users
+    // --------------------
+    /// <summary>
+    /// Retrieves all users from the database.
+    /// Returns a list of UserDto containing only Id and Username.
+    /// </summary>
+    public async Task<List<UserDto>> GetAllUsersAsync()
+    {
+        return await _context.Users
+            .Select(u => new UserDto
+            {
+                Id = u.Id,
+                Username = u.Username
+            }).ToListAsync();
     }
 }

@@ -101,7 +101,6 @@
         }
     }
 
-    // Two-way binding for task status
     private string? TaskStatus
     {
         get => Task.Status;
@@ -109,7 +108,6 @@
         {
             if (Task.Status != value)
             {
-                Task.Status = value;
                 _ = OnStatusChanged.InvokeAsync((Task, value));
             }
         }

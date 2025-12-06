@@ -3,25 +3,22 @@ using Microsoft.AspNetCore.Mvc;
 using TaskManagementApi.Models.DTOs;
 using TaskManagementApi.Services;
 
-namespace TaskManagementApi.Controllers
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class UserController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    [Authorize]
-    public class UserController : ControllerBase
+    private readonly IUserService _userService;
+
+    public UserController(IUserService userService)
     {
-        private readonly UserService _userService;
+        _userService = userService;
+    }
 
-        public UserController(UserService userService)
-        {
-            _userService = userService;
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<List<UserDto>>> GetUsers()
-        {
-            var users = await _userService.GetAllUsersAsync();
-            return Ok(users);
-        }
+    [HttpGet]
+    public async Task<ActionResult<List<UserDto>>> GetUsers()
+    {
+        var users = await _userService.GetAllUsersAsync();
+        return Ok(users);
     }
 }

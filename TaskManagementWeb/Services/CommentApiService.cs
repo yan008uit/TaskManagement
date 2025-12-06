@@ -2,12 +2,12 @@
 
 namespace TaskManagementWeb.Services
 {
-    public class CommentService
+    public class CommentApiService
     {
         private readonly ApiClient _api;
 
         // Inject the shared API client used for all HTTP calls.
-        public CommentService(ApiClient api) => _api = api;
+        public CommentApiService(ApiClient api) => _api = api;
 
         // Basic internal logger for debugging and contextual error tracking.
         private void LogError(string action, Exception ex, int? id = null)

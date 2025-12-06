@@ -6,7 +6,7 @@ using TaskStatus = TaskManagementApi.Models.TaskStatus;
 
 namespace TaskManagementApi.Services
 {
-    public class TaskService
+    public class TaskService : ITaskService
     {
         private readonly AppDbContext _context;
 
@@ -15,6 +15,13 @@ namespace TaskManagementApi.Services
             _context = context;
         }
 
+        // --------------------
+        // Get tasks by project
+        // --------------------
+        /// <summary>
+        /// Returns all tasks for a given project.
+        /// Includes project, assigned user, and creator info.
+        /// </summary>
         public async Task<IEnumerable<TaskDto>?> GetTasksByProjectAsync(int projectId, int userId)
         {
             var tasks = await _context.TaskItems
@@ -41,6 +48,12 @@ namespace TaskManagementApi.Services
             });
         }
 
+        // --------------------
+        // Get a single task by ID
+        // --------------------
+        /// <summary>
+        /// Returns a single task if the user is the project owner, creator, or assigned user.
+        /// </summary>
         public async Task<TaskDto?> GetTaskByIdAsync(int taskId, int userId)
         {
             var task = await _context.TaskItems
@@ -51,6 +64,7 @@ namespace TaskManagementApi.Services
 
             if (task == null) return null;
 
+            // Access control: user must be owner, creator, or assignee
             if (task.Project.UserId != userId &&
                 task.CreatedByUserId != userId &&
                 task.AssignedUserId != userId)
@@ -73,6 +87,13 @@ namespace TaskManagementApi.Services
             };
         }
 
+        // --------------------
+        // Get detailed task info
+        // --------------------
+        /// <summary>
+        /// Returns a task with detailed info, including comments.
+        /// Access allowed if user is project owner, creator, or assignee.
+        /// </summary>
         public async Task<TaskDetailsDto?> GetTaskDetailsByIdAsync(int taskId, int userId)
         {
             var task = await _context.TaskItems
@@ -85,6 +106,7 @@ namespace TaskManagementApi.Services
 
             if (task == null) return null;
 
+            // Access control
             if (task.Project.UserId != userId &&
                 task.CreatedByUserId != userId &&
                 task.AssignedUserId != userId)
@@ -99,15 +121,12 @@ namespace TaskManagementApi.Services
                 CreatedDate = task.CreatedDate,
                 DueDate = task.DueDate,
                 ProjectId = task.ProjectId,
-
                 ProjectName = task.Project?.Name,
-
                 CreatedByUserId = task.CreatedByUserId,
                 CreatedByUsername = task.CreatedByUser?.Username,
                 AssignedUserId = task.AssignedUserId,
                 AssignedUsername = task.AssignedUser?.Username,
                 AssignedUserEmail = task.AssignedUser?.Email,
-
                 Comments = task.Comments.Select(c => new CommentDto
                 {
                     Id = c.Id,
@@ -119,6 +138,13 @@ namespace TaskManagementApi.Services
             };
         }
 
+        // --------------------
+        // Create a new task
+        // --------------------
+        /// <summary>
+        /// Creates a new task under a project. The current user becomes the creator.
+        /// Optionally assigns a user if provided.
+        /// </summary>
         public async Task<TaskDto?> CreateTaskAsync(TaskCreateDto dto, int userId)
         {
             var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == dto.ProjectId);
@@ -137,6 +163,7 @@ namespace TaskManagementApi.Services
                 CreatedDate = DateTime.UtcNow
             };
 
+            // Assign user if valid
             if (dto.AssignedUserId.HasValue)
             {
                 bool userExists = await _context.Users.AnyAsync(u => u.Id == dto.AssignedUserId.Value);
@@ -150,35 +177,55 @@ namespace TaskManagementApi.Services
             return await GetTaskByIdAsync(task.Id, userId);
         }
 
+        // --------------------
+        // Update a task
+        // --------------------
+        /// <summary>
+        /// Updates a task. Creator can edit title, description, due date, and assigned user.
+        /// Both creator and assigned user can update status.
+        /// </summary>
         public async Task<bool> UpdateTaskAsync(int taskId, TaskUpdateDto dto, int userId)
         {
             var task = await _context.TaskItems
-                .FirstOrDefaultAsync(t => t.Id == taskId && t.CreatedByUserId == userId);
+                .FirstOrDefaultAsync(t => t.Id == taskId &&
+                    (t.CreatedByUserId == userId || t.AssignedUserId == userId));
 
             if (task == null) return false;
 
-            if (!string.IsNullOrEmpty(dto.Title)) task.Title = dto.Title;
-            if (!string.IsNullOrEmpty(dto.Description)) task.Description = dto.Description;
+            bool isCreator = task.CreatedByUserId == userId;
 
+            // Only creator can edit core details
+            if (isCreator)
+            {
+                if (!string.IsNullOrEmpty(dto.Title)) task.Title = dto.Title;
+                if (!string.IsNullOrEmpty(dto.Description)) task.Description = dto.Description;
+                if (dto.DueDate.HasValue) task.DueDate = dto.DueDate.Value;
+
+                if (dto.AssignedUserId.HasValue)
+                {
+                    bool userExists = await _context.Users.AnyAsync(u => u.Id == dto.AssignedUserId.Value);
+                    if (userExists)
+                        task.AssignedUserId = dto.AssignedUserId.Value;
+                }
+            }
+
+            // Both creator and assignee can update status
             if (!string.IsNullOrEmpty(dto.Status))
             {
                 if (Enum.TryParse<TaskStatus>(dto.Status, out var s))
                     task.Status = s;
             }
 
-            if (dto.DueDate.HasValue) task.DueDate = dto.DueDate.Value;
-
-            if (dto.AssignedUserId.HasValue)
-            {
-                bool userExists = await _context.Users.AnyAsync(u => u.Id == dto.AssignedUserId.Value);
-                if (userExists)
-                    task.AssignedUserId = dto.AssignedUserId.Value;
-            }
-
             await _context.SaveChangesAsync();
             return true;
         }
 
+        // --------------------
+        // Assign a user to a task
+        // --------------------
+        /// <summary>
+        /// Assigns a user to a task. Only the creator of the task can assign.
+        /// </summary>
         public async Task<bool> AssignUserAsync(int taskId, int assignedUserId, int userId)
         {
             var task = await _context.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId && t.CreatedByUserId == userId);
@@ -192,6 +239,12 @@ namespace TaskManagementApi.Services
             return true;
         }
 
+        // --------------------
+        // Update task status
+        // --------------------
+        /// <summary>
+        /// Updates the status of a task. Only creator can update status via this method.
+        /// </summary>
         public async Task<bool> UpdateStatusAsync(int taskId, string status, int userId)
         {
             var task = await _context.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId && t.CreatedByUserId == userId);
@@ -204,6 +257,12 @@ namespace TaskManagementApi.Services
             return true;
         }
 
+        // --------------------
+        // Delete a task
+        // --------------------
+        /// <summary>
+        /// Deletes a task. Only creator or assigned user can delete.
+        /// </summary>
         public async Task<bool> DeleteTaskAsync(int taskId, int userId)
         {
             var task = await _context.TaskItems.FirstOrDefaultAsync(t => t.Id == taskId);

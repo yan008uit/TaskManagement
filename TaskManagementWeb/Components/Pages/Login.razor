@@ -77,14 +77,19 @@
             return;
         }
 
-        var token = await Auth.Login(LoginModel.Username, LoginModel.Password);
+        var result = await Auth.Login(LoginModel.Username, LoginModel.Password);
 
-        if (string.IsNullOrEmpty(token))
+        if (!result.Success || string.IsNullOrEmpty(result.Token))
         {
-            Error = "Invalid username or password.";
+            Error = result.Error ?? "Invalid username or password.";
             IsProcessing = false;
             return;
         }
+
+        // Login succeeded
+        var token = result.Token;
+
+        IsProcessing = false;
 
         Nav.NavigateTo("/projects", true);
     }

@@ -3,3 +3,9 @@
 /TaskManagementApi/obj
 /TaskManagementWeb/bin
 /TaskManagementApi/bin
+*.dll
+*.cache
+*.json
+/TaskManagement.IntegrationTests/obj
+/TaskManageMentApi.Tests/bin
+/TaskManageMentApi.Tests/obj

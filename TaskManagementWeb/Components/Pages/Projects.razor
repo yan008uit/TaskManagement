@@ -2,8 +2,8 @@
 @using TaskManagementWeb.Models.DTOs
 @using TaskManagementWeb.Services
 @inject AuthService AuthService
-@inject ProjectService ProjectService
-@inject TaskService TaskService
+@inject ProjectApiService ProjectService
+@inject TaskApiService TaskService
 @inject NavigationManager Nav
 
 @if (!initialized)
@@ -50,7 +50,7 @@ else
                 @foreach (var task in myTasks)
                 {
                     <div class="col-sm-6 col-md-4 col-lg-3 d-flex">
-                        <div class="card task-card p-3 w-100 d-flex flex-column"
+                        <div class="card task-card p-3 w-100 d-flex flex-column @(GetTaskStatusClass(task.Status))"
                              style="cursor:pointer;"
                              @onclick="() => OpenTask(task.Id)">
 
@@ -58,12 +58,12 @@ else
                             <p class="text-truncate task-desc">@task.Description</p>
                             <p class="text-muted mb-1">
                                 Project:
-                                <span class="project-name">@projects.FirstOrDefault(p => p.Id == task.ProjectId)?.Name</span>
+                                <span class="text-muted mb-1">@projects.FirstOrDefault(p => p.Id == task.ProjectId)?.Name</span>
                             </p>
                             <p class="text-muted mb-3">Due: @(task.DueDate?.ToString("yyyy-MM-dd") ?? "No due date")</p>
 
                             <!-- Status Dropdown -->
-                            <div class="mb-2"
+                            <div class="mb-1"
                                  @onclick:stopPropagation="true"
                                  @onchange:stopPropagation="true">
                                 <label class="text-muted small">Status:</label>
@@ -231,7 +231,6 @@ else
             projects.RemoveAll(p => p.Id == projectId);
             taskCounts.Remove(projectId);
 
-            // Remove tasks of deleted project
             myTasks.RemoveAll(t => t.ProjectId == projectId);
 
             StateHasChanged();
@@ -242,7 +241,9 @@ else
     {
         var (task, newStatus) = args;
         if (string.IsNullOrEmpty(newStatus)) return;
-        if (task.AssignedUserId != AuthService.UserId) return;
+
+        if (!myTasks.Any(t => t.Id == task.Id)) return;
+
         if (task.Status == newStatus) return;
 
         var dto = new TaskUpdateDto
@@ -257,14 +258,12 @@ else
         var ok = await TaskService.UpdateTaskAsync(task.Id, dto);
         if (!ok) return;
 
-        // Update task in myTasks
         var existingTask = myTasks.FirstOrDefault(t => t.Id == task.Id);
         if (existingTask != null)
         {
             existingTask.Status = newStatus;
         }
 
-        // Update taskCounts
         var project = projects.FirstOrDefault(p => p.Id == task.ProjectId);
         if (project != null)
         {
@@ -281,5 +280,16 @@ else
         }
 
         StateHasChanged();
+    }
+
+    private string GetTaskStatusClass(string? status)
+    {
+        return status switch
+        {
+            "ToDo" => "task-todo",
+            "InProgress" => "task-inprogress",
+            "Done" => "task-done",
+            _ => ""
+        };
     }
 }

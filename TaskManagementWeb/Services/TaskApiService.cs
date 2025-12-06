@@ -2,11 +2,11 @@
 
 namespace TaskManagementWeb.Services
 {
-    public class TaskService
+    public class TaskApiService
     {
         private readonly ApiClient _api;
 
-        public TaskService(ApiClient api) => _api = api;
+        public TaskApiService(ApiClient api) => _api = api;
 
         // Centralized error logging for consistent output and easier debugging.
         private void LogError(string action, Exception ex, int? id = null)

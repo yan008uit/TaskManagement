@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
-using TaskManagementWeb.Components;
 using TaskManagementWeb.Services;
+using TaskManagementWeb.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add Razor Components
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -15,8 +15,7 @@ builder.Services.AddScoped(sp => new HttpClient
     BaseAddress = new Uri("https://localhost:7290/api/")
 });
 
-
-// Add services
+// Add ApiClient
 builder.Services.AddScoped<ApiClient>(sp =>
 {
     var http = sp.GetRequiredService<HttpClient>();
@@ -24,21 +23,21 @@ builder.Services.AddScoped<ApiClient>(sp =>
     return new ApiClient(http, js);
 });
 
+// Add frontend API services
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<ProjectService>();
-builder.Services.AddScoped<TaskService>();
-builder.Services.AddScoped<CommentService>();
+builder.Services.AddScoped<ProjectApiService>();
+builder.Services.AddScoped<TaskApiService>();
+builder.Services.AddScoped<CommentApiService>();
+
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
 builder.Services.AddAuthorizationCore();
 
-
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 

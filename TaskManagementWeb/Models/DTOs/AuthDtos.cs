@@ -32,14 +32,20 @@ namespace TaskManagementWeb.Models.DTOs
         public string Password { get; set; } = "";
     }
 
-    public class LoginResponse
+    public class RegisterResponse
+    {
+        public string Message { get; set; } = "";
+        public string Username { get; set; } = "";
+    }
+
+    public class AuthResponse
     {
         public string Token { get; set; } = "";
     }
 
-    public class RegisterResponse
+    public class ErrorResponse
     {
         public string Message { get; set; } = "";
-        public string? Username { get; set; }
     }
+
 }

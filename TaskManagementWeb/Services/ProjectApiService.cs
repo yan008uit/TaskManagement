@@ -2,23 +2,23 @@
 
 namespace TaskManagementWeb.Services
 {
-    public class ProjectService
+    public class ProjectApiService
     {
         private readonly ApiClient _api;
 
-        // Cached list of users to avoid repeatedly fetching them.
+        // Cached list of users to avoid repeated fetching
         private List<UserDto> _users = new();
         private bool _usersLoaded = false;
 
-        public ProjectService(ApiClient api) => _api = api;
+        public ProjectApiService(ApiClient api) => _api = api;
 
-        // Internal helper for consistent error logging.
+        // Internal error logger
         private void LogError(string action, Exception ex, int? id = null)
         {
-            Console.WriteLine($"[ProjectService] Error during '{action}'{(id.HasValue ? $" (ID: {id})" : "")}: {ex.Message}");
+            Console.WriteLine($"[ProjectApiService] Error during '{action}'{(id.HasValue ? $" (ID: {id})" : "")}: {ex.Message}");
         }
 
-        // Loads all users once per application session.
+        // Load all users once per session
         private async Task LoadUsersAsync()
         {
             if (_usersLoaded) return;
@@ -36,28 +36,28 @@ namespace TaskManagementWeb.Services
             _usersLoaded = true;
         }
 
-        // Retrieves all users.
+        // Public method to get all users
         public async Task<List<UserDto>> GetUsersAsync()
         {
             await LoadUsersAsync();
             return _users;
         }
 
-        // Retrieves all projects.
+        // Get all projects visible to the current user
         public async Task<List<ProjectDto>> GetVisibleProjectsAsync()
         {
             try
             {
-                return await _api.GetAsync<List<ProjectDto>>("project/visible") ?? new();
+                return await _api.GetAsync<List<ProjectDto>>("project/visible") ?? new List<ProjectDto>();
             }
             catch (Exception ex)
             {
                 LogError("GetVisibleProjects", ex);
-                return new();
+                return new List<ProjectDto>();
             }
         }
 
-        // Retrieves a single project by its ID.
+        // Get a single project by ID
         public async Task<ProjectDto?> GetProjectAsync(int id)
         {
             try
@@ -71,7 +71,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Request to create a new project.
+        // Create a new project
         public async Task<ProjectDto?> CreateProjectAsync(ProjectCreateDto dto)
         {
             try
@@ -85,7 +85,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Updates an existing project with new data.
+        // Update existing project
         public async Task<bool> UpdateProjectAsync(int id, ProjectUpdateDto dto)
         {
             try
@@ -99,7 +99,7 @@ namespace TaskManagementWeb.Services
             }
         }
 
-        // Deletes a project.
+        // Delete a project
         public async Task<bool> DeleteProjectAsync(int id)
         {
             try

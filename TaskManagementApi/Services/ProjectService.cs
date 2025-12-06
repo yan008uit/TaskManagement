@@ -5,7 +5,7 @@ using TaskManagementApi.Models.DTOs;
 
 namespace TaskManagementApi.Services
 {
-    public class ProjectService
+    public class ProjectService : IProjectService
     {
         private readonly AppDbContext _context;
 
@@ -17,18 +17,26 @@ namespace TaskManagementApi.Services
         // --------------------
         // Helper: Map TaskItem -> TaskSummaryDto
         // --------------------
+        /// <summary>
+        /// Maps a TaskItem entity to a lightweight TaskSummaryDto for overview lists.
+        /// </summary>
         private static TaskSummaryDto MapToTaskSummary(TaskItem t) => new()
         {
             Id = t.Id,
             Title = t.Title,
-            Status = t.Status.ToString(),  // <- convert enum to string
+            Status = t.Status.ToString(),  // Convert enum to string
             CreatedDate = t.CreatedDate,
             DueDate = t.DueDate,
             AssignedUserId = t.AssignedUserId,
             CreatedByUserId = t.CreatedByUserId
         };
 
+        // --------------------
         // Helper: Map TaskItem -> TaskDetailsDto
+        // --------------------
+        /// <summary>
+        /// Maps a TaskItem entity to TaskDetailsDto including comments.
+        /// </summary>
         private static TaskDetailsDto MapToTaskDetails(TaskItem t) => new()
         {
             Id = t.Id,
@@ -56,11 +64,14 @@ namespace TaskManagementApi.Services
         // --------------------
         // Get all projects owned by user
         // --------------------
+        /// <summary>
+        /// Returns all projects where the user is the owner, including task summaries.
+        /// </summary>
         public async Task<IEnumerable<ProjectDto>> GetUserProjectsAsync(int userId)
         {
             var projects = await _context.Projects
-                .Include(p => p.Tasks)
-                .Where(p => p.UserId == userId)
+                .Include(p => p.Tasks) // Load tasks
+                .Where(p => p.UserId == userId) // Only projects owned by user
                 .ToListAsync();
 
             return projects.Select(p => new ProjectDto
@@ -76,12 +87,16 @@ namespace TaskManagementApi.Services
         // --------------------
         // Get a single project by id (if user owns or has tasks)
         // --------------------
+        /// <summary>
+        /// Returns a project if the user owns it or is assigned/creator of any task in it.
+        /// </summary>
         public async Task<ProjectDto?> GetProjectByIdAsync(int id, int userId)
         {
             var project = await _context.Projects
                 .Include(p => p.Tasks)
                 .FirstOrDefaultAsync(p => p.Id == id &&
-                    (p.UserId == userId || p.Tasks.Any(t => t.AssignedUserId == userId || t.CreatedByUserId == userId)));
+                    (p.UserId == userId ||
+                     p.Tasks.Any(t => t.AssignedUserId == userId || t.CreatedByUserId == userId)));
 
             if (project == null) return null;
 
@@ -99,6 +114,9 @@ namespace TaskManagementApi.Services
         // --------------------
         // Create a new project
         // --------------------
+        /// <summary>
+        /// Creates a new project and assigns the current user as owner.
+        /// </summary>
         public async Task<ProjectDto> CreateProjectAsync(ProjectCreateDto dto, int userId)
         {
             var project = new Project
@@ -125,6 +143,9 @@ namespace TaskManagementApi.Services
         // --------------------
         // Update a project
         // --------------------
+        /// <summary>
+        /// Updates a project’s name/description if the user is the owner.
+        /// </summary>
         public async Task<bool> UpdateProjectAsync(int id, ProjectUpdateDto dto, int userId)
         {
             var existing = await _context.Projects.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
@@ -140,6 +161,9 @@ namespace TaskManagementApi.Services
         // --------------------
         // Delete a project
         // --------------------
+        /// <summary>
+        /// Deletes a project if the user is the owner.
+        /// </summary>
         public async Task<bool> DeleteProjectAsync(int id, int userId)
         {
             var project = await _context.Projects
@@ -157,6 +181,11 @@ namespace TaskManagementApi.Services
         // --------------------
         // Get all projects visible to user
         // --------------------
+        /// <summary>
+        /// Returns all projects visible to the user. Includes:
+        /// - Projects owned by user
+        /// - Projects where user is creator or assigned to any task
+        /// </summary>
         public async Task<List<ProjectDto>> GetVisibleProjectsAsync(int userId)
         {
             var projects = await _context.Projects
@@ -164,7 +193,8 @@ namespace TaskManagementApi.Services
                     .ThenInclude(t => t.AssignedUser)
                 .Include(p => p.Tasks)
                     .ThenInclude(t => t.CreatedByUser)
-                .Where(p => p.UserId == userId || p.Tasks.Any(t => t.AssignedUserId == userId || t.CreatedByUserId == userId))
+                .Where(p => p.UserId == userId ||
+                            p.Tasks.Any(t => t.AssignedUserId == userId || t.CreatedByUserId == userId))
                 .ToListAsync();
 
             return projects.Select(p => new ProjectDto

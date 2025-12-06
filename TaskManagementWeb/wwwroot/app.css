@@ -7,6 +7,7 @@ html, body, #app, .page-container, .login-container {
     background: linear-gradient(to right, #70e1f5, #ffd194);
     color: #343b1b;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 16px; /* base font */
 }
 
 .nav {
@@ -20,7 +21,7 @@ a, .btn-link {
 
 /* Content */
 .content {
-    padding-top: 1.1rem;
+    padding-top: 18px;
 }
 
 h1:focus {
@@ -43,7 +44,7 @@ h1:focus {
 /* Error Boundary */
 .blazor-error-boundary {
     background: #FFA4A4;
-    padding: 1rem 1rem 1rem 3.7rem;
+    padding: 16px 16px 16px 60px;
     color: white;
 }
 
@@ -147,7 +148,7 @@ button,
     }
 
 .btn:focus, .btn:active:focus, .form-control:focus, .form-check-input:focus {
-    box-shadow: 0 0 0 0.1rem #FCF9EA, 0 0 0 0.25rem #BADFDB;
+    box-shadow: 0 0 0 2px #FCF9EA, 0 0 0 5px #BADFDB;
 }
 
 /* Login Page */
@@ -165,38 +166,54 @@ button,
     max-width: 400px;
     border-radius: 12px;
     background: #FCF9EA;
-    padding: 2rem;
+    padding: 32px;
     box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .form-floating > .form-control {
     border-radius: 8px;
-    height: 3rem;
-    font-size: 1rem;
+    height: 48px;
+    font-size: 16px;
 }
 
 .form-floating > label {
-    font-size: 0.9rem;
-    padding-left: 0.75rem;
+    font-size: 14px;
+    padding-left: 12px;
 }
 
-/* Page Titles */
+/* Titles */
 .page-title {
-    margin-bottom: 20px;
-    margin-top: 30px;
-    font-weight: 600;
+    margin: 40px 0 20px 0;
+    font-weight: 800;
+    font-size: 32px;
     color: #343b1b;
     text-align: center;
+    letter-spacing: 1.2px;
+    line-height: 1.2;
+    text-transform: uppercase;
 }
 
 .section-title {
-    margin-bottom: 20px;
-    margin-top: 30px;
-    font-weight: 300;
+    margin: 30px 0 15px 0;
+    font-weight: 600;
+    font-size: 24px;
     color: #343b1b;
     text-align: center;
+    letter-spacing: 0.8px;
+    line-height: 1.3;
+    position: relative;
 }
+
+    .section-title::after {
+        content: "";
+        display: block;
+        width: 50px;
+        height: 4px;
+        margin: 10px auto 0 auto;
+        background-color: #FFA4A4;
+        border-radius: 2px;
+    }
 
 /* Container */
 .container {
@@ -218,13 +235,15 @@ button,
     }
 
 .project-name {
-    font-weight: 600;
-    margin-bottom: 0.25rem;
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 5px;
 }
 
 .project-desc {
-    font-size: 0.9rem;
-    margin-bottom: 0.75rem;
+    font-size: 14px;
+    margin-bottom: 12px;
+    color: #555;
 }
 
 .create-project-card {
@@ -239,14 +258,14 @@ button,
     }
 
 .create-project-icon {
-    font-size: 2rem;
+    font-size: 32px;
     font-weight: bold;
     color: #3f8cff;
     line-height: 1;
 }
 
 .create-project-text {
-    font-size: 1rem;
+    font-size: 16px;
     color: #3f8cff;
     font-weight: 600;
 }
@@ -255,49 +274,52 @@ button,
 .task-summary {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
+    gap: 8px;
+    margin-bottom: 16px;
 }
 
 .badge-status {
-    font-size: 0.75rem;
+    font-size: 12px;
     font-weight: 500;
     text-transform: uppercase;
-    padding: 0.25em 0.5em;
-    border-radius: 0.25rem;
-    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
 }
 
 .badge-total {
-    background-color: #DDC57A;
+    background-color: #e0e0e0;
+    color: #333;
 }
 
 .badge-todo {
     background-color: #BF1A1A;
+    color: #7a5901;
 }
 
 .badge-inprogress {
-    background-color: #1581BF;
+    background-color: #cfe2ff;
+    color: #084298;
 }
 
 .badge-done {
-    background-color: #628141;
+    background-color: #d1e7dd;
+    color: #0f5132;
 }
 
 /* Task Status Cards */
 .task-todo {
     border-left: 4px solid #BF1A1A;
-    background-color: rgba(255, 76, 76, 0.15);
+    background-color: rgba(255, 76, 76, 0.2);
 }
 
 .task-inprogress {
     border-left: 4px solid #1581BF;
-    background-color: rgba(76, 142, 255, 0.15);
+    background-color: rgba(76, 142, 255, 0.2);
 }
 
 .task-done {
     border-left: 4px solid #628141;
-    background-color: rgba(76, 255, 76, 0.15);
+    background-color: rgba(76, 255, 76, 0.2);
 }
 
 /* Comments */
@@ -321,17 +343,17 @@ button,
 .my-3 .card input,
 .my-3 .card textarea,
 .my-3 .card select {
-    margin-bottom: 0.5rem;
+    margin-bottom: 8px;
 }
 
 .btn-outline-primary,
 .btn-outline-danger {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
+    padding: 4px 8px;
+    font-size: 12px;
 }
 
 .card-header {
     background-color: #FCF9EA;
     font-weight: 500;
-    font-size: 0.95rem;
+    font-size: 15px;
 }

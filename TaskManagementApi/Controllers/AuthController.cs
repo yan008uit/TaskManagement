@@ -8,9 +8,9 @@ namespace TaskManagementApi.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly AuthService _authService;
+        private readonly IAuthService _authService;
 
-        public AuthController(AuthService authService)
+        public AuthController(IAuthService authService)
         {
             _authService = authService;
         }
@@ -28,13 +28,14 @@ namespace TaskManagementApi.Controllers
                 return BadRequest(ModelState);
 
             var user = await _authService.Register(request.Username, request.Email, request.Password);
-            if (user == null)
-                return Conflict(new { message = "Username or email is already in use." });
 
-            return Ok(new
+            if (user == null)
+                return Conflict(new ErrorResponse { Message = "Username or email is already in use." });
+
+            return Ok(new RegisterResponse
             {
-                message = "User registered successfully",
-                username = user.Username
+                Message = "User registered successfully",
+                Username = user.Username
             });
         }
 
@@ -51,10 +52,11 @@ namespace TaskManagementApi.Controllers
                 return BadRequest(ModelState);
 
             var token = await _authService.Login(request.Username, request.Password);
-            if (token == null)
-                return Unauthorized(new { message = "Invalid username or password." });
 
-            return Ok(new { token });
+            if (token == null)
+                return Unauthorized(new ErrorResponse { Message = "Invalid username or password." });
+
+            return Ok(new AuthResponse { Token = token });
         }
     }
 }

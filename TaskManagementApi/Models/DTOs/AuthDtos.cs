@@ -19,7 +19,6 @@ namespace TaskManagementApi.Models.DTOs
         [DataType(DataType.Password)]
         public string Password { get; set; } = "";
     }
-
     public class LoginRequest
     {
         [Required(ErrorMessage = "Username is required to log in.")]
@@ -30,5 +29,21 @@ namespace TaskManagementApi.Models.DTOs
         [StringLength(200, MinimumLength = 5)]
         [DataType(DataType.Password)]
         public string Password { get; set; } = "";
+    }
+
+    public class AuthResponse
+    {
+        public string Token { get; set; } = "";
+    }
+
+    public class RegisterResponse
+    {
+        public string Message { get; set; } = "";
+        public string Username { get; set; } = "";
+    }
+
+    public class ErrorResponse
+    {
+        public string Message { get; set; } = "";
     }
 }

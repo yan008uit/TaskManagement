@@ -75,7 +75,8 @@ namespace TaskManagementWeb.Services
         {
             try
             {
-                return await _api.PutAsync($"task/{id}", dto);
+                var response = await _api.PutAsync($"task/{id}", dto);
+                return response.IsSuccessStatusCode;
             }
             catch (Exception ex)
             {
@@ -83,6 +84,7 @@ namespace TaskManagementWeb.Services
                 return false;
             }
         }
+
 
         // Deletes a task.
         public async Task<bool> DeleteTaskAsync(int id)

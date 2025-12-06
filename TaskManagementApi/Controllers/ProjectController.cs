@@ -100,6 +100,10 @@ namespace TaskManagementApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProject(int id, [FromBody] ProjectUpdateDto dto)
         {
+            // NEW: Validation check
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var userId = GetUserId();
             var updated = await _projectService.UpdateProjectAsync(id, dto, userId);
 

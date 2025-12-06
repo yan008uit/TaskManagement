@@ -90,7 +90,8 @@ namespace TaskManagementWeb.Services
         {
             try
             {
-                return await _api.PutAsync($"project/{id}", dto);
+                var response = await _api.PutAsync($"project/{id}", dto);
+                return response.IsSuccessStatusCode;
             }
             catch (Exception ex)
             {

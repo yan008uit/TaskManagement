@@ -42,7 +42,9 @@ namespace TaskManagementWeb.Models.DTOs
 
     public class TaskUpdateDto
     {
-        public string? Title { get; set; }
+        [Required]
+        [MinLength(1)]
+        public string Title { get; set; } = "";
         public int ProjectId { get; set; }
         public string? Description { get; set; }
         public string? Status { get; set; }

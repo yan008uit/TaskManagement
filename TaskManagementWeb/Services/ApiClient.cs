@@ -104,14 +104,6 @@ namespace TaskManagementWeb.Services
             return _httpClient.PostAsJsonAsync(url, body);
         }
 
-        // PUT (bool)
-        public async Task<bool> PutAsync<TRequest>(string url, TRequest body)
-        {
-            EnsureAuthHeader();
-            var response = await _httpClient.PutAsJsonAsync(url, body);
-            return response.IsSuccessStatusCode;
-        }
-
         // PUT (raw)
         public Task<HttpResponseMessage> PutAsync(string url, object body)
         {
@@ -119,18 +111,15 @@ namespace TaskManagementWeb.Services
             return _httpClient.PutAsJsonAsync(url, body);
         }
 
-        // PUT (typed)
+        // PUT (generic)
         public async Task<TResponse?> PutAsync<TRequest, TResponse>(string url, TRequest body)
         {
             EnsureAuthHeader();
-
             var response = await _httpClient.PutAsJsonAsync(url, body);
-
-            if (!response.IsSuccessStatusCode)
-                return default;
-
+            if (!response.IsSuccessStatusCode) return default;
             return await response.Content.ReadFromJsonAsync<TResponse>(JsonOptions);
         }
+
 
         // DELETE
         public async Task<bool> DeleteAsync(string url)

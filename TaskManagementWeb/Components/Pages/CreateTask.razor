@@ -29,7 +29,7 @@ else
                     <label class="form-label fw-semibold">
                         Task Title
                     </label>
-                    <InputText class="form-control rounded-3" @bind-Value="editModel.Title" placeholder="Enter task title..." />
+                    <InputText class="form-control rounded-3" @bind-Value="editModel.Title" placeholder="Enter task title" />
                 </div>
 
                 <!-- Description -->
@@ -38,33 +38,51 @@ else
                     <InputTextArea class="form-control rounded-3"
                                    rows="4"
                                    @bind-Value="editModel.Description"
-                                   placeholder="Describe the task...">
+                                   placeholder="Enter task description">
                     </InputTextArea>
                 </div>
 
                 <div class="row">
-                    <!-- Assign User -->
+                    <!-- Assigned User -->
                     <div class="col-md-6 mb-4">
                         <label class="form-label fw-semibold">Assigned user</label>
-                        <InputSelect class="form-select rounded-3" @bind-Value="editModel.AssignedUserId">
-                            <option disabled value="">Select a user</option>
-                            @foreach (var user in users)
-                            {
-                                <option value="@user.Id">@user.Username</option>
-                            }
-                        </InputSelect>
+                        @if (users.Count == 0)
+                        {
+                            <select class="form-select rounded-3" disabled>
+                                <option>Loading users...</option>
+                            </select>
+                        }
+                        else
+                        {
+                            <InputSelect id="assignedUser" class="form-select rounded-3" @bind-Value="editModel.AssignedUserId">
+                                <option disabled value="">Select a user</option>
+                                @foreach (var user in users)
+                                {
+                                    <option value="@user.Id">@user.Username</option>
+                                }
+                            </InputSelect>
+                        }
                     </div>
 
-                    <!-- Project -->
+                    <!-- Assigned Project -->
                     <div class="col-md-6 mb-4">
                         <label class="form-label fw-semibold">Assigned Project</label>
-                        <InputSelect class="form-select rounded-3" @bind-Value="editModel.ProjectId">
-                            <option disabled value="">Select a project</option>
-                            @foreach (var project in projects)
-                            {
-                                <option value="@project.Id">@project.Name</option>
-                            }
-                        </InputSelect>
+                        @if (projects.Count == 0)
+                        {
+                            <select class="form-select rounded-3" disabled>
+                                <option>Loading projects...</option>
+                            </select>
+                        }
+                        else
+                        {
+                            <InputSelect id="assignedProject" class="form-select rounded-3" @bind-Value="editModel.ProjectId">
+                                <option disabled value="">Select a project</option>
+                                @foreach (var project in projects)
+                                {
+                                    <option value="@project.Id">@project.Name</option>
+                                }
+                            </InputSelect>
+                        }
                     </div>
                 </div>
 
@@ -92,7 +110,7 @@ else
                 <div class="d-grid gap-2">
                     <button class="btn btn-primary py-2" type="submit" disabled="@saving">
                         <i class="bi bi-plus-circle me-2"></i>
-                        Save Task
+                        Add Task
                     </button>
 
                     <button class="btn btn-outline-secondary py-2" type="button" @onclick="Cancel" disabled="@saving">
@@ -132,11 +150,29 @@ else
             return;
         }
 
-        projects = await ProjectService.GetVisibleProjectsAsync();
-        users = await ProjectService.GetUsersAsync();
+        var projectsTask = ProjectService.GetVisibleProjectsAsync();
+        var usersTask = ProjectService.GetUsersAsync();
+        await Task.WhenAll(projectsTask, usersTask);
+
+        projects = projectsTask.Result;
+        users = usersTask.Result;
 
         editModel.Status = "ToDo";
         editModel.DueDate = DateTime.Today.AddDays(7);
+
+        if (users.Any(u => u.Id == AuthService.UserId))
+        {
+            editModel.AssignedUserId = AuthService.UserId;
+        }
+        else if (users.Count > 0)
+        {
+            editModel.AssignedUserId = users.First().Id;
+        }
+
+        if (projects.Count > 0)
+        {
+            editModel.ProjectId = projects.First().Id;
+        }
 
         initialized = true;
     }

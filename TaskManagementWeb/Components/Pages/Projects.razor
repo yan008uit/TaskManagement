@@ -6,6 +6,8 @@
 @inject TaskApiService TaskService
 @inject NavigationManager Nav
 
+<title>Dashboard - Task Manager</title>
+
 @if (!initialized)
 {
     <p class="text-muted text-center mt-5">Loading...</p>
@@ -127,13 +129,13 @@ else
                             @if (p.UserId == AuthService.UserId)
                             {
                                 <div class="d-flex gap-2 mt-auto">
-                                    <button class="btn btn-sm btn-outline-primary"
+                                    <button class="edit-project-btn btn btn-sm btn-outline-primary"
                                             @onclick:stopPropagation="true"
                                             @onclick="() => EditProject(p.Id)">
                                         Edit
                                     </button>
 
-                                    <button class="btn btn-sm btn-outline-danger"
+                                    <button class="delete-project-btn btn btn-sm btn-outline-danger"
                                             @onclick:stopPropagation="true"
                                             @onclick="() => DeleteProject(p.Id)">
                                         Delete
@@ -221,7 +223,7 @@ else
     {
         Nav.NavigateTo("/tasks/create");
     }
-    private void GoToCreateProject() => Nav.NavigateTo("/createproject");
+    private void GoToCreateProject() => Nav.NavigateTo("/projects/create");
     private void OpenTask(int taskId) => Nav.NavigateTo($"/tasks/{taskId}");
 
     private async Task DeleteProject(int projectId)

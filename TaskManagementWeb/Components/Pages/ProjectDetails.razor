@@ -199,7 +199,10 @@ else
 
     private async Task DeleteTask(TaskDto task)
     {
-        if (task.CreatedByUserId != AuthService.UserId && task.AssignedUserId != AuthService.UserId)
+        bool isCreator = task.CreatedByUserId == AuthService.UserId;
+        bool isAssigned = task.AssignedUserId == AuthService.UserId;
+
+        if (!isCreator && !isAssigned)
             return;
 
         await TaskService.DeleteTaskAsync(task.Id);
@@ -207,6 +210,7 @@ else
         RemoveTaskFromCurrentList(task);
         StateHasChanged();
     }
+
 
     private void RemoveTaskFromCurrentList(TaskDto task)
     {

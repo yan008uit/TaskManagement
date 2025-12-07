@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskManageMentApi.Tests", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskManagementApi.IntegrationTests", "TaskManagement.IntegrationTests\TaskManagementApi.IntegrationTests.csproj", "{64E49056-1D88-4E31-963B-AF8CA634C47E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskManagement.E2E.Tests", "TaskManagement.E2E.Tests\TaskManagement.E2E.Tests.csproj", "{947C9B83-8DB3-46EC-8966-E1FD767AF0D8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{64E49056-1D88-4E31-963B-AF8CA634C47E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{64E49056-1D88-4E31-963B-AF8CA634C47E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{64E49056-1D88-4E31-963B-AF8CA634C47E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{947C9B83-8DB3-46EC-8966-E1FD767AF0D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{947C9B83-8DB3-46EC-8966-E1FD767AF0D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{947C9B83-8DB3-46EC-8966-E1FD767AF0D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{947C9B83-8DB3-46EC-8966-E1FD767AF0D8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,4 +1,4 @@
-﻿@page "/createproject"
+﻿@page "/projects/create"
 @using TaskManagementWeb.Models.DTOs
 @using TaskManagementWeb.Services
 @inject AuthService AuthService
@@ -7,9 +7,12 @@
 
 <h3 class="page-title text-center mb-4">Create New Project</h3>
 
-@if (!AuthService.IsAuthenticated)
+@if (!initialized)
 {
-    <p class="text-warning text-center">Redirecting to login...</p>
+    <div class="text-center text-muted py-5">
+        <div class="spinner-border mb-2"></div>
+        <p>Loading...</p>
+    </div>
 }
 else
 {
@@ -20,16 +23,31 @@ else
                 <ValidationSummary class="text-danger" />
 
                 <div class="mb-3">
-                    <label class="form-label">Project Name</label>
-                    <InputText class="form-control" @bind-Value="newProjectModel.Name" placeholder="Enter project name" />
+                    <label class="form-label" for="projectName">Project Name</label>
+                    <InputText id="projectName"
+                               class="form-control"
+                               @bind-Value="newProjectModel.Name"
+                               placeholder="Enter project name" />
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Project Description</label>
-                    <InputTextArea class="form-control" @bind-Value="newProjectModel.Description" placeholder="Enter project description" />
+                    <label class="form-label" for="projectDescription">Project Description</label>
+                    <InputTextArea id="projectDescription"
+                                   class="form-control"
+                                   @bind-Value="newProjectModel.Description"
+                                   placeholder="Enter project description" />
                 </div>
 
-                <button class="btn btn-primary w-100" type="submit">Create Project</button>
+                <div class="d-grid gap-2">
+                    <button id="createProjectBtn" class="btn btn-primary w-100" type="submit">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Create Project
+                    </button>
+
+                    <button id="cancelProjectBtn" class="btn btn-outline-secondary py-2" type="button" @onclick="Cancel">
+                        Cancel
+                    </button>
+                </div>
 
                 @if (!string.IsNullOrEmpty(createProjectError))
                 {
@@ -42,16 +60,30 @@ else
 
 @code {
     private ProjectCreateDto newProjectModel = new();
-    private string createProjectError = string.Empty;
+    private string createProjectError = "";
+    private bool initialized = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.InitializeAsync();
+
+        if (!AuthService.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        newProjectModel.UserId = AuthService.UserId;
+
+        initialized = true;
+    }
 
     private async Task CreateProjectAsync()
     {
-        createProjectError = string.Empty;
+        createProjectError = "";
 
         try
         {
-            newProjectModel.UserId = AuthService.UserId;
-
             var created = await ProjectService.CreateProjectAsync(newProjectModel);
             if (created != null)
             {
@@ -63,4 +95,7 @@ else
             createProjectError = $"Failed to create project: {ex.Message}";
         }
     }
+
+    private void Cancel() =>
+        Nav.NavigateTo("/projects", true);
 }

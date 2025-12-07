@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
-using TaskManagementWeb.Services;
 using TaskManagementWeb.Components;
+using TaskManagementWeb.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

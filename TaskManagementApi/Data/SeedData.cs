@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TaskManagementApi.Models;
+﻿using TaskManagementApi.Models;
 using TaskStatus = TaskManagementApi.Models.TaskStatus;
 
 namespace TaskManagementApi.Data

@@ -1,137 +1,161 @@
 ﻿using Microsoft.Playwright;
 using TaskManagement.E2E.Tests.Pages;
 
-[TestClass]
-public class CreateTasksPageTests
+namespace TaskManagement.E2E.Tests
 {
-    private const string LoginUrl = "http://localhost:5244/login";
-    private const string CreateTaskUrl = "http://localhost:5244/tasks/create";
-    private const string Username = "Yuri";
-    private const string Password = "Pass123!";
-
-    private IBrowser? _browser;
-    private IBrowserContext? _context;
-    private IPage? _page;
-
-    [TestInitialize]
-    public async Task Init()
+    [TestClass]
+    public class CreateTasksPageTests
     {
-        var playwright = await Playwright.CreateAsync();
-        _browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
-        _context = await _browser.NewContextAsync();
-        _page = await _context.NewPageAsync();
+        // URLs and credentials
+        private const string LoginUrl = "http://localhost:5244/login";
+        private const string CreateTaskUrl = "http://localhost:5244/tasks/create";
+        private const string Username = "Yuri";
+        private const string Password = "Pass123!";
 
-        // Login
-        var loginPage = new LoginPage(_page);
-        await loginPage.GoToAsync(LoginUrl);
-        await loginPage.LoginAsync(Username, Password);
+        // Playwright browser, context, and page
+        private IBrowser? _browser;
+        private IBrowserContext? _context;
+        private IPage? _page;
 
-        // Wait for dashboard or projects page
-        await _page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-    }
+        [TestInitialize]
+        public async Task Init()
+        {
+            // Launch Playwright and create browser/context/page
+            var playwright = await Playwright.CreateAsync();
+            _browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = true });
+            _context = await _browser.NewContextAsync();
+            _page = await _context.NewPageAsync();
 
-    [TestCleanup]
-    public async Task Cleanup()
-    {
-        if (_context != null) await _context.CloseAsync();
-        if (_browser != null) await _browser.CloseAsync();
-    }
+            // Perform login
+            var loginPage = new LoginPage(_page);
+            await loginPage.GoToAsync(LoginUrl);
+            await loginPage.LoginAsync(Username, Password);
 
-    [TestMethod]
-    public async Task PreselectedValuesAreCorrect()
-    {
-        await _page!.GotoAsync(CreateTaskUrl);
-        await _page.Locator("h3.page-title:has-text('Add Task')").WaitForAsync();
+            // Wait for redirect to projects dashboard
+            await _page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        }
 
-        var assignedUser = await _page.Locator("#assignedUser").InputValueAsync();
-        Assert.IsFalse(string.IsNullOrEmpty(assignedUser), "Expected a preselected user.");
+        [TestCleanup]
+        public async Task Cleanup()
+        {
+            // Close context and browser after tests
+            if (_context != null) await _context.CloseAsync();
+            if (_browser != null) await _browser.CloseAsync();
+        }
 
-        var assignedProject = await _page.Locator("#assignedProject").InputValueAsync();
-        Assert.IsFalse(string.IsNullOrEmpty(assignedProject), "Expected a preselected project.");
+        [TestMethod]
+        public async Task PreselectedValuesAreCorrect()
+        {
+            // Navigate to Add Task page
+            await _page!.GotoAsync(CreateTaskUrl);
+            await _page.Locator("h3.page-title:has-text('Add Task')").WaitForAsync();
 
-        var statusValue = await _page.Locator("select[name='editModel.Status']").InputValueAsync();
-        Assert.AreEqual("ToDo", statusValue, "Expected default status to be 'ToDo'.");
-    }
+            // Verify default selected user
+            var assignedUser = await _page.Locator("#assignedUser").InputValueAsync();
+            Assert.IsFalse(string.IsNullOrEmpty(assignedUser), "Expected a preselected user.");
 
-    [TestMethod]
-    public async Task CanCreateTaskWithCustomSelections()
-    {
-        await _page!.GotoAsync(CreateTaskUrl);
-        await _page.Locator("h3.page-title:has-text('Add Task')").WaitForAsync();
+            // Verify default selected project
+            var assignedProject = await _page.Locator("#assignedProject").InputValueAsync();
+            Assert.IsFalse(string.IsNullOrEmpty(assignedProject), "Expected a preselected project.");
 
-        // Title & Description
-        await _page.FillAsync("input[placeholder='Enter task title']", "Custom Task");
-        await _page.FillAsync("textarea[placeholder='Enter task description']", "Custom description.");
+            // Verify default status
+            var statusValue = await _page.Locator("select[name='editModel.Status']").InputValueAsync();
+            Assert.AreEqual("ToDo", statusValue, "Expected default status to be 'ToDo'.");
+        }
 
-        // Select 2nd user
-        var userSelect = _page.Locator("#assignedUser");
-        var secondUserValue = await userSelect.Locator("option").Nth(1).GetAttributeAsync("value");
-        await userSelect.SelectOptionAsync(new[] { secondUserValue! });
+        [TestMethod]
+        public async Task CanCreateTaskWithCustomSelections()
+        {
+            // Navigate to Add Task page
+            await _page!.GotoAsync(CreateTaskUrl);
+            await _page.Locator("h3.page-title:has-text('Add Task')").WaitForAsync();
 
-        // Select last project
-        var projectSelect = _page.Locator("#assignedProject");
-        var lastProjectValue = await projectSelect.Locator("option").Last.GetAttributeAsync("value");
-        await projectSelect.SelectOptionAsync(new[] { lastProjectValue! });
+            // Fill title and description
+            await _page.FillAsync("input[placeholder='Enter task title']", "Custom Task");
+            await _page.FillAsync("textarea[placeholder='Enter task description']", "Custom description.");
 
-        // Select 2nd status
-        var statusSelect = _page.Locator("select[name='editModel.Status']");
-        var secondStatusValue = await statusSelect.Locator("option").Nth(1).GetAttributeAsync("value");
-        await statusSelect.SelectOptionAsync(new[] { secondStatusValue! });
+            // Select 2nd user
+            var userSelect = _page.Locator("#assignedUser");
+            var secondUserValue = await userSelect.Locator("option").Nth(1).GetAttributeAsync("value");
+            await userSelect.SelectOptionAsync(new[] { secondUserValue! });
 
-        // Due date
-        await _page.FillAsync("#dueDate", DateTime.Today.AddDays(5).ToString("yyyy-MM-dd"));
+            // Select last project
+            var projectSelect = _page.Locator("#assignedProject");
+            var lastProjectValue = await projectSelect.Locator("option").Last.GetAttributeAsync("value");
+            await projectSelect.SelectOptionAsync(new[] { lastProjectValue! });
 
-        // Save
-        await _page.ClickAsync("button.btn-primary[type='submit']");
-        await _page.WaitForURLAsync("**/projects", new PageWaitForURLOptions { Timeout = 10000 });
+            // Select last status
+            var statusSelect = _page.Locator("select[name='editModel.Status']");
+            var lastStatusValue = await statusSelect.Locator("option").Last.GetAttributeAsync("value");
+            await statusSelect.SelectOptionAsync(new[] { lastStatusValue! });
 
-        Assert.Contains("/projects", _page.Url);
-    }
+            // Set due date
+            await _page.FillAsync("#dueDate", DateTime.Today.AddDays(5).ToString("yyyy-MM-dd"));
 
-    [TestMethod]
-    public async Task CannotCreateTaskWithoutTitle()
-    {
-        await _page!.GotoAsync(CreateTaskUrl);
-        await _page.Locator("h3.page-title:has-text('Add Task')").WaitForAsync();
+            // Submit the form
+            await _page.ClickAsync("button.btn-primary[type='submit']");
 
-        // Only description filled
-        await _page.FillAsync("textarea[placeholder='Enter task description']", "No title task.");
+            // Wait for Blazor routing to complete (UI rerender)
+            await _page.WaitForURLAsync("**/projects", new() { Timeout = 5000 });
 
-        // Select last user
-        var userSelect = _page.Locator("#assignedUser");
-        var lastUserValue = await userSelect.Locator("option").Last.GetAttributeAsync("value");
-        await userSelect.SelectOptionAsync(new[] { lastUserValue! });
+            // Confirm UI update by waiting for a project card
+            await _page.Locator(".project-card").First.WaitForAsync(new() { Timeout = 5000 });
 
-        // Select last project
-        var projectSelect = _page.Locator("#assignedProject");
-        var lastProjectValue = await projectSelect.Locator("option").Last.GetAttributeAsync("value");
-        await projectSelect.SelectOptionAsync(new[] { lastProjectValue! });
+            // Assert redirected URL
+            Assert.Contains("/projects", _page.Url);
+        }
 
-        // Select 2nd status
-        var statusSelect = _page.Locator("select[name='editModel.Status']");
-        var secondStatusValue = await statusSelect.Locator("option").Nth(1).GetAttributeAsync("value");
-        await statusSelect.SelectOptionAsync(new[] { secondStatusValue! });
+        [TestMethod]
+        public async Task CannotCreateTaskWithoutTitle()
+        {
+            // Navigate to Add Task page
+            await _page!.GotoAsync(CreateTaskUrl);
+            await _page.Locator("h3.page-title:has-text('Add Task')").WaitForAsync();
 
-        // Submit without title
-        await _page.ClickAsync("button.btn-primary[type='submit']");
+            // Fill only description
+            await _page.FillAsync("textarea[placeholder='Enter task description']", "No title task.");
 
-        // Check validation message
-        var errorLocator = _page.Locator("li.validation-message:has-text('Title is required')");
-        await errorLocator.WaitForAsync();
+            // Select last user
+            var userSelect = _page.Locator("#assignedUser");
+            var lastUserValue = await userSelect.Locator("option").Last.GetAttributeAsync("value");
+            await userSelect.SelectOptionAsync(new[] { lastUserValue! });
 
-        var errorMsg = await errorLocator.TextContentAsync();
-        Assert.IsFalse(string.IsNullOrEmpty(errorMsg), "Expected 'Title is required.' validation message.");
-    }
+            // Select last project
+            var projectSelect = _page.Locator("#assignedProject");
+            var lastProjectValue = await projectSelect.Locator("option").Last.GetAttributeAsync("value");
+            await projectSelect.SelectOptionAsync(new[] { lastProjectValue! });
 
-    [TestMethod]
-    public async Task TaskCancelButtonRedirectsToProjects()
-    {
-        await _page!.GotoAsync(CreateTaskUrl);
-        await _page.Locator("h3.page-title:has-text('Add Task')").WaitForAsync();
+            // Select 2nd status
+            var statusSelect = _page.Locator("select[name='editModel.Status']");
+            var secondStatusValue = await statusSelect.Locator("option").Nth(1).GetAttributeAsync("value");
+            await statusSelect.SelectOptionAsync(new[] { secondStatusValue! });
 
-        await _page.ClickAsync("button.btn-outline-secondary[type='button']");
-        await _page.WaitForURLAsync("**/projects");
+            // Submit without title
+            await _page.ClickAsync("button.btn-primary[type='submit']");
 
-        Assert.Contains("/projects", _page.Url);
+            // Verify validation error appears
+            var errorLocator = _page.Locator("li.validation-message:has-text('Title is required')");
+            await errorLocator.WaitForAsync();
+
+            var errorMsg = await errorLocator.TextContentAsync();
+            Assert.IsFalse(string.IsNullOrEmpty(errorMsg), "Expected 'Title is required.' validation message.");
+        }
+
+        [TestMethod]
+        public async Task TaskCancelButtonRedirectsToProjects()
+        {
+            // Navigate to Add Task page
+            await _page!.GotoAsync(CreateTaskUrl);
+            await _page.Locator("h3.page-title:has-text('Add Task')").WaitForAsync();
+
+            // Click cancel button
+            await _page.ClickAsync("button.btn-outline-secondary[type='button']");
+
+            // Wait for redirect to projects
+            await _page.WaitForURLAsync("**/projects");
+
+            // Assert redirected URL
+            Assert.Contains("/projects", _page.Url);
+        }
     }
 }

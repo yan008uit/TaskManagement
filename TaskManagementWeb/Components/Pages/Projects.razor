@@ -70,9 +70,9 @@ else
                                  @onchange:stopPropagation="true">
                                 <label class="text-muted small">Status:</label>
                                 <InputSelect class="form-select form-select-sm"
-                                             Value="task.Status"
-                                             ValueChanged="@(async (string newStatus) => await UpdateTaskStatus((task, newStatus)))"
-                                             ValueExpression="() => task.Status">
+                                             @bind-Value="task.Status"
+                                             @bind-Value:event="onchange"
+                                             ValueChanged="@(async (string newStatus) => await UpdateTaskStatus((task, newStatus)))">
                                     <option value="ToDo">To do</option>
                                     <option value="InProgress">In progress</option>
                                     <option value="Done">Done</option>

@@ -1,104 +1,126 @@
 ﻿using Microsoft.Playwright;
 using TaskManagement.E2E.Tests.Pages;
 
-[TestClass]
-public class CreateProjectsPageTests
+namespace TaskManagement.E2E.Tests
 {
-    private const string LoginUrl = "http://localhost:5244/login";
-    private const string CreateProjectUrl = "http://localhost:5244/projects/create";
-    private const string Username = "Yuri";
-    private const string Password = "Pass123!";
-
-    private IBrowser? _browser;
-    private IBrowserContext? _context;
-    private IPage? _page;
-
-    [TestInitialize]
-    public async Task Init()
+    [TestClass]
+    public class CreateProjectsPageTests
     {
-        var playwright = await Playwright.CreateAsync();
-        _browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+        // URLs and credentials
+        private const string LoginUrl = "http://localhost:5244/login";
+        private const string CreateProjectUrl = "http://localhost:5244/projects/create";
+        private const string Username = "Yuri";
+        private const string Password = "Pass123!";
+
+        // Playwright browser, context, and page
+        private IBrowser? _browser;
+        private IBrowserContext? _context;
+        private IPage? _page;
+
+        [TestInitialize]
+        public async Task Init()
         {
-            Headless = true
-        });
+            // Launch Playwright and create browser/context/page
+            var playwright = await Playwright.CreateAsync();
+            _browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+            {
+                Headless = true
+            });
 
-        _context = await _browser.NewContextAsync();
-        _page = await _context.NewPageAsync();
+            _context = await _browser.NewContextAsync();
+            _page = await _context.NewPageAsync();
 
-        // Login
-        var loginPage = new LoginPage(_page);
-        await loginPage.GoToAsync(LoginUrl);
-        await loginPage.LoginAsync(Username, Password);
+            // Perform login
+            var loginPage = new LoginPage(_page);
+            await loginPage.GoToAsync(LoginUrl);
+            await loginPage.LoginAsync(Username, Password);
 
-        await _page.WaitForURLAsync("**/projects", new PageWaitForURLOptions { Timeout = 15000 });
-    }
+            // Wait for redirect to projects dashboard
+            await _page.WaitForURLAsync("**/projects", new PageWaitForURLOptions { Timeout = 15000 });
+        }
 
-    [TestCleanup]
-    public async Task Cleanup()
-    {
-        if (_context != null) await _context.CloseAsync();
-        if (_browser != null) await _browser.CloseAsync();
-    }
+        [TestCleanup]
+        public async Task Cleanup()
+        {
+            // Close context and browser after tests
+            if (_context != null) await _context.CloseAsync();
+            if (_browser != null) await _browser.CloseAsync();
+        }
 
-    [TestMethod]
-    public async Task CanCreateProjectWithCustomText()
-    {
-        await _page!.GotoAsync(CreateProjectUrl);
+        [TestMethod]
+        public async Task CanCreateProjectWithCustomText()
+        {
+            // Navigate to Create Project page
+            await _page!.GotoAsync(CreateProjectUrl);
 
-        await _page.Locator("h3.page-title:has-text('Create New Project')")
-                   .WaitForAsync(new LocatorWaitForOptions { Timeout = 30000 });
+            // Wait until the form heading is visible
+            await _page.Locator("h3.page-title:has-text('Create New Project')")
+                       .WaitForAsync(new() { Timeout = 30000 });
 
-        // Fill fields
-        await _page.FillAsync("#projectName", "Custom Project");
-        await _page.FillAsync("#projectDescription", "Custom project description.");
+            // Fill project name and description
+            await _page.FillAsync("#projectName", "Custom Project");
+            await _page.FillAsync("#projectDescription", "Custom project description.");
 
-        // Click create button
-        await _page.ClickAsync("#createProjectBtn");
+            // Click the create project button
+            await _page.ClickAsync("#createProjectBtn");
 
-        // Expect redirect
-        await _page.WaitForURLAsync("**/projects");
-        Assert.Contains("/projects", _page.Url);
-    }
+            // Wait for redirect to dashboard
+            await _page.Locator("h3.page-title:has-text('Dashboard')")
+                       .WaitForAsync(new() { Timeout = 30000 });
 
-    [TestMethod]
-    public async Task CannotCreateProjectWithoutTitle()
-    {
-        await _page!.GotoAsync(CreateProjectUrl);
-        await _page.Locator("h3.page-title:has-text('Create New Project')").WaitForAsync();
+            // Wait for first project card to confirm UI refresh
+            await _page.Locator(".project-card").First.WaitForAsync(new() { Timeout = 5000 });
 
-        // Leave title empty
-        await _page.FillAsync("#projectDescription", "Custom project description.");
+            // Assert the URL contains /projects
+            Assert.Contains("/projects",
+                _page.Url, $"Expected URL to contain '/projects' but was '{_page.Url}'");
+        }
 
-        // Click create
-        await _page.ClickAsync("#createProjectBtn");
+        [TestMethod]
+        public async Task CannotCreateProjectWithoutTitle()
+        {
+            // Navigate to Create Project page
+            await _page!.GotoAsync(CreateProjectUrl);
 
-        // Check validation message
-        var error = await _page
-            .Locator(".validation-message:has-text('Project Name is required')")
-            .TextContentAsync();
+            // Wait for heading to ensure form is loaded
+            await _page.Locator("h3.page-title:has-text('Create New Project')").WaitForAsync();
 
-        Assert.IsFalse(string.IsNullOrEmpty(error),
-            "Expected validation message 'Project Name is required' not found");
-    }
+            // Leave project title empty, only fill description
+            await _page.FillAsync("#projectDescription", "Custom project description.");
 
-    [TestMethod]
-    public async Task ProjectCancelButtonRedirectsToProjects()
-    {
-        await _page!.GotoAsync(CreateProjectUrl);
+            // Click create button
+            await _page.ClickAsync("#createProjectBtn");
 
-        // Ensure form loaded
-        await _page.Locator(".card.p-4").WaitForAsync();
+            // Wait for validation message to appear
+            var validation = _page.Locator(".validation-message:has-text('Project Name is required')");
+            await validation.WaitForAsync();
 
-        var cancelBtn = _page.Locator("#cancelProjectBtn");
-        await cancelBtn.WaitForAsync();
+            // Assert validation message is visible
+            Assert.IsTrue(await validation.IsVisibleAsync(),
+                "Expected validation message 'Project Name is required' not found");
+        }
 
-        // Click
-        await cancelBtn.ClickAsync();
+        [TestMethod]
+        public async Task ProjectCancelButtonRedirectsToProjects()
+        {
+            // Navigate to Create Project page
+            await _page!.GotoAsync(CreateProjectUrl);
 
-        // Expect redirect
-        await _page.WaitForURLAsync("**/projects", new PageWaitForURLOptions { Timeout = 15000 });
+            // Ensure form container loaded
+            await _page.Locator(".card.p-4").WaitForAsync();
 
-        Assert.Contains("/projects",
-_page.Url, $"Expected redirect to '/projects', but URL was {_page.Url}");
+            var cancelBtn = _page.Locator("#cancelProjectBtn");
+            await cancelBtn.WaitForAsync();
+
+            // Click cancel button
+            await cancelBtn.ClickAsync();
+
+            // Wait until dashboard heading is visible to confirm redirect
+            await _page.Locator("h3.page-title:has-text('Dashboard')")
+                       .WaitForAsync(new LocatorWaitForOptions { Timeout = 15000 });
+
+            // Assert redirect URL contains /projects
+            Assert.Contains("/projects", _page.Url, $"Expected redirect to '/projects', but URL was {_page.Url}");
+        }
     }
 }

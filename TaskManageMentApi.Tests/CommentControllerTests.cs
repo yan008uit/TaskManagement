@@ -5,9 +5,6 @@ using System.Security.Claims;
 using TaskManagementApi.Controllers;
 using TaskManagementApi.Models.DTOs;
 using TaskManagementApi.Services;
-using Xunit;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace TaskManagementApi.Tests
 {

@@ -293,7 +293,7 @@ button,
 
 .badge-todo {
     background-color: #BF1A1A;
-    color: #7a5901;
+    color: #FCF9EA;
 }
 
 .badge-inprogress {
@@ -309,17 +309,17 @@ button,
 /* Task Status Cards */
 .task-todo {
     border-left: 4px solid #BF1A1A;
-    background-color: rgba(255, 76, 76, 0.2);
+    background-color: rgba(255, 76, 76, 0.25);
 }
 
 .task-inprogress {
     border-left: 4px solid #1581BF;
-    background-color: rgba(76, 142, 255, 0.2);
+    background-color: rgba(76, 142, 255, 0.25);
 }
 
 .task-done {
     border-left: 4px solid #628141;
-    background-color: rgba(76, 255, 76, 0.2);
+    background-color: rgba(76, 255, 76, 0.25);
 }
 
 /* Comments */

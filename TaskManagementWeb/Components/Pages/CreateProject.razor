@@ -20,39 +20,40 @@ else
         <div class="card p-4 w-100" style="max-width: 500px;">
             <EditForm Model="@newProjectModel" OnValidSubmit="CreateProjectAsync">
                 <DataAnnotationsValidator />
-                <ValidationSummary class="text-danger" />
 
                 <div class="mb-3">
                     <label class="form-label" for="projectName">Project Name</label>
                     <InputText id="projectName"
                                class="form-control"
-                               @bind-Value="newProjectModel.Name"
-                               placeholder="Enter project name" />
+                               @bind-Value="newProjectModel.Name" />
+                    <ValidationMessage For="@(() => newProjectModel.Name)"
+                                       class="validation-message" />
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label" for="projectDescription">Project Description</label>
                     <InputTextArea id="projectDescription"
                                    class="form-control"
-                                   @bind-Value="newProjectModel.Description"
-                                   placeholder="Enter project description" />
+                                   @bind-Value="newProjectModel.Description" />
+                    <ValidationMessage For="@(() => newProjectModel.Description)"
+                                       class="validation-message" />
                 </div>
 
                 <div class="d-grid gap-2">
-                    <button id="createProjectBtn" class="btn btn-primary w-100" type="submit">
+                    <button id="createProjectBtn"
+                            class="btn btn-primary w-100"
+                            type="submit">
                         <i class="bi bi-plus-circle me-2"></i>
                         Create Project
                     </button>
 
-                    <button id="cancelProjectBtn" class="btn btn-outline-secondary py-2" type="button" @onclick="Cancel">
+                    <button id="cancelProjectBtn"
+                            class="btn btn-outline-secondary py-2"
+                            type="button"
+                            @onclick="Cancel">
                         Cancel
                     </button>
                 </div>
-
-                @if (!string.IsNullOrEmpty(createProjectError))
-                {
-                    <p class="text-danger mt-2">@createProjectError</p>
-                }
             </EditForm>
         </div>
     </div>

@@ -51,14 +51,19 @@ else
             </p>
 
             <!-- ACTION BUTTONS -->
-            @if (task.CreatedByUserId == AuthService.UserId ||
-                    task.AssignedUserId == AuthService.UserId)
+            @if (task.CreatedByUserId == AuthService.UserId)
             {
                 <div class="d-flex gap-2 mt-3">
                     <button class="btn btn-sm btn-outline-primary" @onclick="() => EditTask(task.Id)">
                         Edit Task
                     </button>
+                </div>
+            }
 
+            @if (task.CreatedByUserId == AuthService.UserId ||
+                    task.AssignedUserId == AuthService.UserId)
+            {
+                <div class="d-flex gap-2 mt-3">
                     <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTask(task.Id)">
                         Delete Task
                     </button>

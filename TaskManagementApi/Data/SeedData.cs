@@ -83,7 +83,7 @@ namespace TaskManagementApi.Data
             {
                 // Project 1
                 new Comment { Text = "Remember mobile first",           TaskItemId = tasks[0].Id, CreatedDate = now,               UserId = users["yuri"].Id },
-                new Comment { Text = "Review layout",                   TaskItemId = tasks[0].Id, CreatedDate = now.AddMinutes(5), UserId = users["yuri"].Id },
+                new Comment { Text = "Review layout",                   TaskItemId = tasks[0].Id, CreatedDate = now.AddMinutes(5), UserId = users["johanne"].Id },
 
                 // Project 2
                 new Comment { Text = "Implement OAuth next",            TaskItemId = tasks[3].Id, CreatedDate = now, UserId = users["johanne"].Id },

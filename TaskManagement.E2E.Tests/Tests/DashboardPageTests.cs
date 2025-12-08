@@ -97,6 +97,9 @@ namespace TaskManagement.E2E.Tests
             if (firstTask == null)
                 Assert.Inconclusive("No task cards available on dashboard.");
 
+            // Get task name for verification
+            var taskName = await firstTask!.Locator(".task-title").InnerTextAsync();
+
             // Click first task card and wait for details page
             await firstTask.ClickAsync();
             await _page!.WaitForURLAsync(url => url.Contains("/tasks/"));
@@ -110,15 +113,15 @@ namespace TaskManagement.E2E.Tests
         {
             var dashboardPage = await GoToDashboardAsync();
 
-            var firstProject = dashboardPage.GetFirstProject();
-            if (firstProject == null)
+            var secondProject = dashboardPage.Get2ndProject();
+            if (secondProject == null)
                 Assert.Inconclusive("No projects available on dashboard.");
 
             // Get project name for verification
-            var projectName = await firstProject!.Locator(".project-name").InnerTextAsync();
+            var projectName = await secondProject!.Locator(".project-name").InnerTextAsync();
 
             // Click project card and wait for project details
-            await firstProject.ClickAsync();
+            await secondProject.ClickAsync();
             await _page!.WaitForURLAsync(url => url.Contains("/projects/"));
             await _page.Locator("p.project-description").WaitForAsync();
 

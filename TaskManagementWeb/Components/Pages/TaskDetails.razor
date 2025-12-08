@@ -51,24 +51,27 @@ else
             </p>
 
             <!-- ACTION BUTTONS -->
-            @if (task.CreatedByUserId == AuthService.UserId)
-            {
-                <div class="d-flex gap-2 mt-3">
-                    <button class="btn btn-sm btn-outline-primary" @onclick="() => EditTask(task.Id)">
+            <div class="d-flex gap-2 mt-3">
+
+                <!-- EDIT: Only creator -->
+                @if (task.CreatedByUserId == AuthService.UserId)
+                {
+                    <button class="btn btn-sm btn-outline-primary"
+                            @onclick="() => EditTask(task.Id)">
                         Edit Task
                     </button>
-                </div>
-            }
-
-            @if (task.CreatedByUserId == AuthService.UserId ||
-                    task.AssignedUserId == AuthService.UserId)
-            {
-                <div class="d-flex gap-2 mt-3">
-                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTask(task.Id)">
+                }
+                <!-- DELETE: Creator OR Assignee -->
+                @if (task.CreatedByUserId == AuthService.UserId ||
+                            task.AssignedUserId == AuthService.UserId)
+                {
+                    <button class="btn btn-sm btn-outline-danger"
+                            @onclick="() => DeleteTask(task.Id)">
                         Delete Task
                     </button>
-                </div>
-            }
+                }
+            </div>
+
         </div>
 
         <!-- COMMENTS SECTION -->

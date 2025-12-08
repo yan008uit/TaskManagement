@@ -46,9 +46,9 @@ namespace TaskManagement.E2E.Tests.Pages
         public ILocator GetTaskByIndex(int index) => TaskCards.Nth(index);
         public ILocator GetProjectByIndex(int index) => ProjectCards.Nth(index);
 
-        // Convenience methods for first task/project
+        // Convenience methods for first task and 2nd project
         public ILocator GetFirstTask() => GetTaskByIndex(0);
-        public ILocator GetFirstProject() => GetProjectByIndex(0);
+        public ILocator Get2ndProject() => GetProjectByIndex(1);
 
         // Get counts for tasks and projects
         public async Task<int> GetTaskCountAsync() => await TaskCards.CountAsync();

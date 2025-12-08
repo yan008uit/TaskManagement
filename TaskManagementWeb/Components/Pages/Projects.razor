@@ -171,6 +171,26 @@ else
         await LoadProjectsAsync();
     }
 
+    protected override void OnInitialized()
+    {
+        Nav.LocationChanged += HandleLocationChanged;
+    }
+
+    private async void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        var uri = Nav.ToBaseRelativePath(e.Location).TrimEnd('/');
+        if (uri.Equals("projects", StringComparison.OrdinalIgnoreCase))
+        {
+            await LoadProjectsAsync();
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= HandleLocationChanged;
+    }
+
     private async Task LoadProjectsAsync()
     {
         isLoading = true;

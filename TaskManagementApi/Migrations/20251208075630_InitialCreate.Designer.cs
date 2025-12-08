@@ -11,7 +11,7 @@ using TaskManagementApi.Data;
 namespace TaskManagementApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251208044920_InitialCreate")]
+    [Migration("20251208075630_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
